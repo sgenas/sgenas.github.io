@@ -3,7 +3,7 @@ const siteMetadata = {
   title: 'The Blog and Projects of Sebastian Genas',
   author: 'Sebastian Genas',
   headerTitle: 'Sebastian Genas',
-  description: 'A blog and projects by Sebastian Genas',
+  description: 'This is still very much a template. I am working on it.',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://sgenas.github.io',
