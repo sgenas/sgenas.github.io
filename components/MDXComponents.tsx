@@ -5,7 +5,7 @@ import type { MDXComponents } from 'mdx/types'
 import Image from './Image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
-import PCAVisualization from './circular-features-graphs/PCAVisualization'
+import PCAWrapper from '@/components/circular-features-graphs/PCAWrapper'
 
 export const components: MDXComponents = {
   Image,
@@ -14,5 +14,5 @@ export const components: MDXComponents = {
   pre: Pre,
   table: TableWrapper,
   BlogNewsletterForm,
-  PCAVisualization: PCAVisualization,
+  PCAVisualization: PCAWrapper,
 }

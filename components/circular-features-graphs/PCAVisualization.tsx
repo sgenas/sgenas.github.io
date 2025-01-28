@@ -47,7 +47,9 @@ const defaultData: LayerData = {
     }
 };
 
-const PCAVisualization: React.FC<Props> = ({ 
+const PCAVisualization: React.FC<Props> & { 
+    fromJSON: (jsonPath: string) => Promise<React.ReactElement>
+} = ({ 
     data = defaultData, 
     experimentConfig,
     width = 800, 
@@ -295,6 +297,18 @@ const PCAVisualization: React.FC<Props> = ({
             </div>
         </div>
     );
+};
+
+// Add the static method
+PCAVisualization.fromJSON = async (jsonPath: string): Promise<React.ReactElement> => {
+    try {
+        const response = await fetch(jsonPath);
+        const data = await response.json();
+        return <PCAVisualization data={data} />;
+    } catch (error) {
+        console.error('Error loading PCA data:', error);
+        throw error;
+    }
 };
 
 export default PCAVisualization;
