@@ -186,6 +186,90 @@ const PCAVisualization: React.FC<Props> & {
                 return colorScale(label);
             };
 
+            // First, create a function to generate unique IDs for points so D3 can track them
+            const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`;
+
+            // Update the points section
+            const points = pointsGroup.selectAll("circle")
+                .data(layerData.display_labels.map((label, i) => ({
+                    label,
+                    x: layerData.states_pca[i][0],
+                    y: layerData.states_pca[i][1]
+                })), d => getPointId(d.label));
+
+            // Handle points that are entering
+            const pointsEnter = points.enter()
+                .append("circle")
+                .attr("id", d => getPointId(d.label))
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y))
+                .attr("r", 8)
+                .attr("fill", d => getPointColor(d.label))
+                .attr("fill-opacity", "0.8")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", "1");
+
+            // Update existing points with transition
+            points.transition()
+                .duration(750) // Animation duration in milliseconds
+                .ease(d3.easeQuadInOut) // Smooth easing function
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y));
+
+            // Handle point labels similarly
+            const labels = pointsGroup.selectAll("text")
+                .data(layerData.display_labels.map((label, i) => ({
+                    label,
+                    x: layerData.states_pca[i][0],
+                    y: layerData.states_pca[i][1]
+                })), d => `label-${getPointId(d.label)}`);
+
+            // Enter new labels
+            labels.enter()
+                .append("text")
+                .attr("x", d => xScale(d.x))
+                .attr("y", d => yScale(d.y) - 12)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "10px")
+                .style("pointer-events", "none")
+                .text(d => d.label);
+
+            // Update existing labels with transition
+            labels.transition()
+                .duration(1500)
+                .ease(d3.easeQuadInOut)
+                .attr("x", d => xScale(d.x))
+                .attr("y", d => yScale(d.y) - 12);
+
+            // Handle point and label removal
+            points.exit().remove();
+            labels.exit().remove();
+
+            // Update mouse events
+            pointsGroup.selectAll("circle")
+                .on("mouseover", (event, d) => {
+                    d3.select(event.currentTarget)
+                        .transition()
+                        .duration(200)
+                        .attr("r", 10)
+                        .attr("fill-opacity", "1");
+
+                    tooltip
+                        .style("opacity", "1")
+                        .style("left", `${event.pageX + 10}px`)
+                        .style("top", `${event.pageY - 10}px`)
+                        .text(d.label);
+                })
+                .on("mouseout", (event) => {
+                    d3.select(event.currentTarget)
+                        .transition()
+                        .duration(200)
+                        .attr("r", 8)
+                        .attr("fill-opacity", "0.8");
+
+                    tooltip.style("opacity", "0");
+                });
+
             // Add points with labels
             layerData.states_pca.forEach((point, i) => {
                 const label = layerData.display_labels[i];
