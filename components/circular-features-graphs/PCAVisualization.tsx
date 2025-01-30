@@ -46,6 +46,15 @@ const defaultData: LayerData = {
   },
 }
 
+interface PointData {
+  label: string
+  x: number
+  y: number
+}
+
+// Type for d3.zoom transform
+type ZoomTransform = d3.ZoomTransform
+
 const PCAVisualization: React.FC<Props> & {
   fromJSON: (jsonPath: string) => Promise<React.ReactElement>
 } = ({ data = defaultData, experimentConfig, width = 800, height = 600 }) => {
@@ -120,9 +129,9 @@ const PCAVisualization: React.FC<Props> & {
       .append('clipPath')
       .attr('id', 'plot-area')
       .append('rect')
-      .attr('x', margin.left - 20) // Extra space for points
-      .attr('y', margin.top - 20) // Extra space for labels
-      .attr('width', width - margin.left - margin.right + 40) // Compensate for padding
+      .attr('x', margin.left - 20)
+      .attr('y', margin.top - 20)
+      .attr('width', width - margin.left - margin.right + 40)
       .attr('height', height - margin.top - margin.bottom + 40)
 
     // Create initial scales with padding
@@ -135,7 +144,7 @@ const PCAVisualization: React.FC<Props> & {
     // Add padding by expanding the domain by a percentage
     const xRange = xExtent[1] - xExtent[0]
     const yRange = yExtent[1] - yExtent[0]
-    const xPadding = xRange * 0.2 // 20% padding
+    const xPadding = xRange * 0.2
     const yPadding = yRange * 0.2
 
     const xScale = d3
@@ -150,37 +159,37 @@ const PCAVisualization: React.FC<Props> & {
       .range([height - margin.bottom, margin.top])
       .nice()
 
-    // Define zoom behavior
+    // Define zoom behavior with proper typing
     const zoom = d3
-      .zoom()
-      .scaleExtent([0.5, 5]) // Min and max zoom scales
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 5])
       .extent([
         [margin.left, margin.top],
         [width - margin.right, height - margin.bottom],
       ])
-      .on('zoom', (event) => {
-        zoomGroup.attr('transform', event.transform)
+      .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        zoomGroup.attr('transform', event.transform.toString())
 
         // Update axes with zoomed scales
         const newXScale = event.transform.rescaleX(xScale)
         const newYScale = event.transform.rescaleY(yScale)
 
         // Update axes to match zoom level but keep them at the edges
-        axisGroup.select('.x-axis').call(
-          d3.axisBottom(newXScale).tickFormat((d) => {
-            // Format tick labels to handle potentially large numbers
-            return typeof d === 'number' ? d.toFixed(2) : ''
-          }) as any
-        )
-        ;(axisGroup.select('.y-axis') as d3.Selection<SVGGElement, unknown, null, undefined>).call(
-          d3.axisLeft(newYScale).tickFormat((d) => {
-            return typeof d === 'number' ? d.toFixed(2) : ''
-          })
-        )
+        axisGroup
+          .select<SVGGElement>('.x-axis')
+          .call(
+            d3.axisBottom(newXScale).tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+          )
+
+        axisGroup
+          .select<SVGGElement>('.y-axis')
+          .call(
+            d3.axisLeft(newYScale).tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+          )
       })
 
-    // Apply zoom behavior to SVG
-    svg.call(zoom as any)
+    // Apply zoom behavior to SVG with proper typing
+    svg.call(zoom)
 
     // Add zoom reset button
     d3.select(svgRef.current.parentNode as HTMLElement)
@@ -194,7 +203,7 @@ const PCAVisualization: React.FC<Props> & {
         svg
           .transition()
           .duration(750)
-          .call(zoom.transform as any, d3.zoomIdentity)
+          .call(zoom.transform, d3.zoomIdentity as ZoomTransform)
       })
 
     const updateVisualization = (layerKey: string) => {
@@ -220,7 +229,7 @@ const PCAVisualization: React.FC<Props> & {
       // First remove old axes
       axisGroup.selectAll('.axis').remove()
 
-      // Add new axes
+      // Add new axes with proper typing
       axisGroup
         .append('g')
         .attr('class', 'x-axis axis')
@@ -270,21 +279,20 @@ const PCAVisualization: React.FC<Props> & {
         return colorScale(label)
       }
 
-      // Helper function to get point ID
       const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`
 
-      // Update points with transitions
-      const points = pointsGroup.selectAll('circle').data(
+      // Update points with proper typing
+      const points = pointsGroup.selectAll<SVGCircleElement, PointData>('circle').data(
         layerData.display_labels.map((label, i) => ({
           label,
           x: layerData.states_pca[i][0],
           y: layerData.states_pca[i][1],
         })),
-        (d: { label: string; x: number; y: number }) => getPointId(d.label)
+        (d: PointData) => getPointId(d.label)
       )
 
       // Enter new points
-      const pointsEnter = points
+      points
         .enter()
         .append('circle')
         .attr('id', (d) => getPointId(d.label))
@@ -304,14 +312,14 @@ const PCAVisualization: React.FC<Props> & {
         .attr('cx', (d) => xScale(d.x))
         .attr('cy', (d) => yScale(d.y))
 
-      // Handle point labels
-      const labels = pointsGroup.selectAll('text').data(
+      // Handle point labels with proper typing
+      const labels = pointsGroup.selectAll<SVGTextElement, PointData>('text').data(
         layerData.display_labels.map((label, i) => ({
           label,
           x: layerData.states_pca[i][0],
           y: layerData.states_pca[i][1],
         })),
-        (d: { label: string; x: number; y: number }) => `label-${getPointId(d.label)}`
+        (d: PointData) => `label-${getPointId(d.label)}`
       )
 
       // Enter new labels
@@ -340,8 +348,8 @@ const PCAVisualization: React.FC<Props> & {
       // Update mouse events
       pointsGroup
         .selectAll('circle')
-        .on('mouseover', (event, d: { label: string; x: number; y: number }) => {
-          d3.select(event.currentTarget)
+        .on('mouseover', (event: MouseEvent, d: PointData) => {
+          d3.select(event.currentTarget as SVGCircleElement)
             .transition()
             .duration(200)
             .attr('r', 10)
@@ -353,8 +361,8 @@ const PCAVisualization: React.FC<Props> & {
             .style('top', `${event.pageY - 10}px`)
             .text(d.label)
         })
-        .on('mouseout', (event) => {
-          d3.select(event.currentTarget)
+        .on('mouseout', (event: MouseEvent) => {
+          d3.select(event.currentTarget as SVGCircleElement)
             .transition()
             .duration(200)
             .attr('r', 8)
