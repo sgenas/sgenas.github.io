@@ -12,15 +12,17 @@ Let's see if this page renders correctly.
 
 Here's our PCA visualization showing the relationships between different items:
 
-<PCAVisualization dataPath='/data/circular-features/gemma-2-2b_weekday_very_merged.json'/>
+export const fileName = 'hsv_colour_one_red';
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileName}_merged.json`}/>
 
 Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
 
-<PCAVisualization dataPath='/data/circular-features/gemma-2-9b_weekday_very_merged.json'/>
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileName}_merged.json`}/>
 
 And here's the one with Gemma 2 27B:
 
-<PCAVisualization dataPath='/data/circular-features/gemma-2-27b_weekday_very_merged.json'/>
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileName}_merged.json`}/>
 
 ## Analysis
 
