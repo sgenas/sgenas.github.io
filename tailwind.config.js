@@ -23,10 +23,11 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', ...fontFamily.sans],
+        serif: ['var(--font-source-serif)', ...fontFamily.serif],
       },
       colors: {
-        primary: colors.pink,
-        gray: colors.gray,
+        primary: colors.amber,
+        gray: colors.slate,
       },
       zIndex: {
         60: '60',
