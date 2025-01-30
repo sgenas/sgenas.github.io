@@ -47,7 +47,7 @@ const defaultData: LayerData = {
     }
 };
 
-const PCAVisualization: React.FC<Props> & { 
+const PCAVisualization: React.FC<Props> & {
     fromJSON: (jsonPath: string) => Promise<React.ReactElement>
 } = ({ 
     data = defaultData, 
@@ -60,11 +60,10 @@ const PCAVisualization: React.FC<Props> & {
     const [currentLayer, setCurrentLayer] = useState(1);
     const [maxLayer, setMaxLayer] = useState(1);
     
-    const margin = { top: 60, right: 50, bottom: 50, left: 50 };
+    const margin = { top: 60, right: 100, bottom: 50, left: 50 };
 
     useEffect(() => {
         if (!data) return;
-        // Find the highest layer number in the data
         const layers = Object.keys(data).map(key => 
             parseInt(key.replace('layer_', ''))
         );
@@ -78,7 +77,15 @@ const PCAVisualization: React.FC<Props> & {
         d3.select(svgRef.current).selectAll("*").remove();
 
         const svg = d3.select(svgRef.current);
-        const mainGroup = svg.append("g");
+        
+        // Create separate groups for axes and zoomable content
+        const axisGroup = svg.append("g")
+            .attr("class", "axis-group");
+            
+        const zoomGroup = svg.append("g")
+            .attr("class", "zoom-group");
+            
+        const mainGroup = zoomGroup.append("g");
         const tooltip = d3.select(tooltipRef.current);
 
         // Create color scale based on the experiment type
@@ -116,32 +123,80 @@ const PCAVisualization: React.FC<Props> & {
             .attr("width", width - margin.left - margin.right)
             .attr("height", height - margin.top - margin.bottom);
 
+        // Create initial scales
+        const layerData = data[`layer_${currentLayer}`];
+        const xScale = d3.scaleLinear()
+            .domain(d3.extent(layerData.states_pca, d => d[0]) as [number, number])
+            .range([margin.left, width - margin.right])
+            .nice();
+
+        const yScale = d3.scaleLinear()
+            .domain(d3.extent(layerData.states_pca, d => d[1]) as [number, number])
+            .range([height - margin.bottom, margin.top])
+            .nice();
+
+        // Define zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 5]) // Min and max zoom scales
+            .extent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+            .on("zoom", (event) => {
+                zoomGroup.attr("transform", event.transform);
+                
+                // Update axes with zoomed scales
+                const newXScale = event.transform.rescaleX(xScale);
+                const newYScale = event.transform.rescaleY(yScale);
+                
+                // Update axes to match zoom level but keep them at the edges
+                axisGroup.select(".x-axis")
+                    .call(d3.axisBottom(newXScale)
+                        .tickFormat(d => {
+                            // Format tick labels to handle potentially large numbers
+                            return typeof d === 'number' ? d.toFixed(2) : '';
+                        }));
+                axisGroup.select(".y-axis")
+                    .call(d3.axisLeft(newYScale)
+                        .tickFormat(d => {
+                            return typeof d === 'number' ? d.toFixed(2) : '';
+                        }));
+            });
+
+        // Apply zoom behavior to SVG
+        svg.call(zoom as any);
+
+        // Add zoom reset button
+        const resetButton = d3.select(svgRef.current.parentNode!)
+            .append("button")
+            .attr("class", "absolute top-4 right-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm")
+            .text("Reset Zoom")
+            .on("click", () => {
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform as any, d3.zoomIdentity);
+            });
+
         const updateVisualization = (layerKey: string) => {
             const layerData = data[layerKey];
             if (!layerData) return;
 
-            // Create scales
-            const xScale = d3.scaleLinear()
-                .domain(d3.extent(layerData.states_pca, d => d[0]) as [number, number])
-                .range([margin.left, width - margin.right])
-                .nice();
-
-            const yScale = d3.scaleLinear()
-                .domain(d3.extent(layerData.states_pca, d => d[1]) as [number, number])
-                .range([height - margin.bottom, margin.top])
-                .nice();
+            // Update scales
+            xScale.domain(d3.extent(layerData.states_pca, d => d[0]) as [number, number]).nice();
+            yScale.domain(d3.extent(layerData.states_pca, d => d[1]) as [number, number]).nice();
 
             // Clear previous elements
             mainGroup.selectAll("*").remove();
 
-            // Add axes
-            mainGroup.append("g")
-                .attr("class", "x-axis")
+            // Add axes to the fixed axis group
+            // First remove old axes
+            axisGroup.selectAll(".axis").remove();
+            
+            // Add new axes
+            axisGroup.append("g")
+                .attr("class", "x-axis axis")
                 .attr("transform", `translate(0,${height - margin.bottom})`)
                 .call(d3.axisBottom(xScale));
 
-            mainGroup.append("g")
-                .attr("class", "y-axis")
+            axisGroup.append("g")
+                .attr("class", "y-axis axis")
                 .attr("transform", `translate(${margin.left},0)`)
                 .call(d3.axisLeft(yScale));
 
@@ -154,7 +209,6 @@ const PCAVisualization: React.FC<Props> & {
 
             const extendedLength = Math.max(width, height) * 100;
 
-            // Add horizontal and vertical zero lines
             [
                 { x1: -extendedLength, x2: extendedLength, y1: yScale(0), y2: yScale(0) },
                 { x1: xScale(0), x2: xScale(0), y1: -extendedLength, y2: extendedLength }
@@ -171,11 +225,10 @@ const PCAVisualization: React.FC<Props> & {
                     .attr("opacity", "0.3");
             });
 
-            // Add points
+            // Points group
             const pointsGroup = gClip.append("g")
                 .attr("class", "points-group");
 
-            // Helper function to get point color
             const getPointColor = (label: string) => {
                 if (layerData.experiment_name.includes('colour')) {
                     return colorScale(label);
@@ -186,10 +239,10 @@ const PCAVisualization: React.FC<Props> & {
                 return colorScale(label);
             };
 
-            // First, create a function to generate unique IDs for points so D3 can track them
+            // Helper function to get point ID
             const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`;
 
-            // Update the points section
+            // Update points with transitions
             const points = pointsGroup.selectAll("circle")
                 .data(layerData.display_labels.map((label, i) => ({
                     label,
@@ -197,7 +250,7 @@ const PCAVisualization: React.FC<Props> & {
                     y: layerData.states_pca[i][1]
                 })), d => getPointId(d.label));
 
-            // Handle points that are entering
+            // Enter new points
             const pointsEnter = points.enter()
                 .append("circle")
                 .attr("id", d => getPointId(d.label))
@@ -209,14 +262,14 @@ const PCAVisualization: React.FC<Props> & {
                 .attr("stroke", "#fff")
                 .attr("stroke-width", "1");
 
-            // Update existing points with transition
+            // Update existing points
             points.transition()
-                .duration(750) // Animation duration in milliseconds
-                .ease(d3.easeQuadInOut) // Smooth easing function
+                .duration(750)
+                .ease(d3.easeQuadInOut)
                 .attr("cx", d => xScale(d.x))
                 .attr("cy", d => yScale(d.y));
 
-            // Handle point labels similarly
+            // Handle point labels
             const labels = pointsGroup.selectAll("text")
                 .data(layerData.display_labels.map((label, i) => ({
                     label,
@@ -234,14 +287,14 @@ const PCAVisualization: React.FC<Props> & {
                 .style("pointer-events", "none")
                 .text(d => d.label);
 
-            // Update existing labels with transition
+            // Update existing labels
             labels.transition()
-                .duration(1500)
+                .duration(750)
                 .ease(d3.easeQuadInOut)
                 .attr("x", d => xScale(d.x))
                 .attr("y", d => yScale(d.y) - 12);
 
-            // Handle point and label removal
+            // Remove old elements
             points.exit().remove();
             labels.exit().remove();
 
@@ -269,55 +322,9 @@ const PCAVisualization: React.FC<Props> & {
 
                     tooltip.style("opacity", "0");
                 });
-
-            // Add points with labels
-            layerData.states_pca.forEach((point, i) => {
-                const label = layerData.display_labels[i];
-                
-                // Add point
-                pointsGroup.append("circle")
-                    .attr("cx", xScale(point[0]))
-                    .attr("cy", yScale(point[1]))
-                    .attr("r", 8)
-                    .attr("fill", getPointColor(label))
-                    .attr("fill-opacity", "0.8")
-                    .attr("stroke", "#fff")
-                    .attr("stroke-width", "1")
-                    .on("mouseover", (event: MouseEvent) => {
-                        d3.select(event.currentTarget)
-                            .transition()
-                            .duration(200)
-                            .attr("r", 10)
-                            .attr("fill-opacity", "1");
-
-                        tooltip
-                            .style("opacity", "1")
-                            .style("left", `${event.pageX + 10}px`)
-                            .style("top", `${event.pageY - 10}px`)
-                            .text(label);
-                    })
-                    .on("mouseout", (event: MouseEvent) => {
-                        d3.select(event.currentTarget)
-                            .transition()
-                            .duration(200)
-                            .attr("r", 8)
-                            .attr("fill-opacity", "0.8");
-
-                        tooltip.style("opacity", "0");
-                    });
-
-                // Add label
-                pointsGroup.append("text")
-                    .attr("x", xScale(point[0]))
-                    .attr("y", yScale(point[1]) - 12)
-                    .attr("text-anchor", "middle")
-                    .attr("font-size", "10px")
-                    .style("pointer-events", "none")
-                    .text(label);
-            });
         };
 
-        // Add static elements
+        // Add static elements (titles)
         svg.append("text")
             .attr("x", width / 2)
             .attr("y", height - margin.bottom / 3)
@@ -383,7 +390,7 @@ const PCAVisualization: React.FC<Props> & {
     );
 };
 
-// Add the static method
+// Static method remains the same
 PCAVisualization.fromJSON = async (jsonPath: string): Promise<React.ReactElement> => {
     try {
         const response = await fetch(jsonPath);
