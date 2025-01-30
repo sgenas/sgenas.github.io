@@ -47,7 +47,7 @@ const defaultData: LayerData = {
     }
 };
 
-const PCAVisualization: React.FC<Props> & {
+const PCAVisualization: React.FC<Props> & { 
     fromJSON: (jsonPath: string) => Promise<React.ReactElement>
 } = ({ 
     data = defaultData, 
@@ -60,7 +60,7 @@ const PCAVisualization: React.FC<Props> & {
     const [currentLayer, setCurrentLayer] = useState(1);
     const [maxLayer, setMaxLayer] = useState(1);
     
-    const margin = { top: 60, right: 100, bottom: 50, left: 50 };
+    const margin = { top: 60, right: 50, bottom: 50, left: 50 };
 
     useEffect(() => {
         if (!data) return;
@@ -113,25 +113,36 @@ const PCAVisualization: React.FC<Props> & {
 
         const colorScale = getColorScale();
 
-        // Create clip path
+        // Create clip path with extra padding
         svg.append("defs")
             .append("clipPath")
             .attr("id", "plot-area")
             .append("rect")
-            .attr("x", margin.left)
-            .attr("y", margin.top)
-            .attr("width", width - margin.left - margin.right)
-            .attr("height", height - margin.top - margin.bottom);
+            .attr("x", margin.left - 20)  // Extra space for points
+            .attr("y", margin.top - 20)    // Extra space for labels
+            .attr("width", width - margin.left - margin.right + 40)  // Compensate for padding
+            .attr("height", height - margin.top - margin.bottom + 40);
 
-        // Create initial scales
+        // Create initial scales with padding
         const layerData = data[`layer_${currentLayer}`];
+        
+        // Calculate the full data extent and add padding
+        const xExtent = d3.extent(layerData.states_pca, d => d[0]) as [number, number];
+        const yExtent = d3.extent(layerData.states_pca, d => d[1]) as [number, number];
+        
+        // Add padding by expanding the domain by a percentage
+        const xRange = xExtent[1] - xExtent[0];
+        const yRange = yExtent[1] - yExtent[0];
+        const xPadding = xRange * 0.2; // 20% padding
+        const yPadding = yRange * 0.2;
+
         const xScale = d3.scaleLinear()
-            .domain(d3.extent(layerData.states_pca, d => d[0]) as [number, number])
+            .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
             .range([margin.left, width - margin.right])
             .nice();
 
         const yScale = d3.scaleLinear()
-            .domain(d3.extent(layerData.states_pca, d => d[1]) as [number, number])
+            .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
             .range([height - margin.bottom, margin.top])
             .nice();
 
@@ -152,8 +163,8 @@ const PCAVisualization: React.FC<Props> & {
                         .tickFormat(d => {
                             // Format tick labels to handle potentially large numbers
                             return typeof d === 'number' ? d.toFixed(2) : '';
-                        }));
-                axisGroup.select(".y-axis")
+                        }) as any);
+                (axisGroup.select(".y-axis") as d3.Selection<SVGGElement, unknown, null, undefined>)
                     .call(d3.axisLeft(newYScale)
                         .tickFormat(d => {
                             return typeof d === 'number' ? d.toFixed(2) : '';
@@ -164,7 +175,7 @@ const PCAVisualization: React.FC<Props> & {
         svg.call(zoom as any);
 
         // Add zoom reset button
-        const resetButton = d3.select(svgRef.current.parentNode!)
+        d3.select(svgRef.current.parentNode as HTMLElement)
             .append("button")
             .attr("class", "absolute top-4 right-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm")
             .text("Reset Zoom")
@@ -178,9 +189,21 @@ const PCAVisualization: React.FC<Props> & {
             const layerData = data[layerKey];
             if (!layerData) return;
 
-            // Update scales
-            xScale.domain(d3.extent(layerData.states_pca, d => d[0]) as [number, number]).nice();
-            yScale.domain(d3.extent(layerData.states_pca, d => d[1]) as [number, number]).nice();
+            // Update scales with padding
+            const xExtent = d3.extent(layerData.states_pca, d => d[0]) as [number, number];
+            const yExtent = d3.extent(layerData.states_pca, d => d[1]) as [number, number];
+            
+            const xRange = xExtent[1] - xExtent[0];
+            const yRange = yExtent[1] - yExtent[0];
+            const xPadding = xRange * 0.2;
+            const yPadding = yRange * 0.2;
+
+            xScale
+                .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+                .nice();
+            yScale
+                .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+                .nice();
 
             // Clear previous elements
             mainGroup.selectAll("*").remove();
@@ -248,7 +271,7 @@ const PCAVisualization: React.FC<Props> & {
                     label,
                     x: layerData.states_pca[i][0],
                     y: layerData.states_pca[i][1]
-                })), d => getPointId(d.label));
+                })), (d: { label: string; x: number; y: number }) => getPointId(d.label));
 
             // Enter new points
             const pointsEnter = points.enter()
@@ -275,7 +298,7 @@ const PCAVisualization: React.FC<Props> & {
                     label,
                     x: layerData.states_pca[i][0],
                     y: layerData.states_pca[i][1]
-                })), d => `label-${getPointId(d.label)}`);
+                })), (d: { label: string; x: number; y: number }) => `label-${getPointId(d.label)}`);
 
             // Enter new labels
             labels.enter()
@@ -300,7 +323,7 @@ const PCAVisualization: React.FC<Props> & {
 
             // Update mouse events
             pointsGroup.selectAll("circle")
-                .on("mouseover", (event, d) => {
+                .on("mouseover", (event, d: { label: string; x: number; y: number }) => {
                     d3.select(event.currentTarget)
                         .transition()
                         .duration(200)
