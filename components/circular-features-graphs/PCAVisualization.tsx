@@ -1,10 +1,9 @@
 'use client'
-import { LayerData, PCData, ExperimentType, Props } from './types'
-import { createColorScale, getPointColor } from './colors'
+import { LayerData, PCData, ExperimentType, Props, PointData } from './types'
+import { createColorScale } from './colors'
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 
-// Default data to prevent undefined errors
 const defaultData: LayerData = {
   layer_1: {
     experiment_name: 'colour',
@@ -22,13 +21,6 @@ const defaultData: LayerData = {
   },
 }
 
-interface PointData {
-  label: string
-  x: number
-  y: number
-}
-
-// Type for d3.zoom transform
 type ZoomTransform = d3.ZoomTransform
 
 const PCAVisualization: React.FC<Props> & {
@@ -41,6 +33,40 @@ const PCAVisualization: React.FC<Props> & {
 
   const margin = { top: 60, right: 50, bottom: 50, left: 50 }
 
+  // Helper functions
+  const getScales = (layerData: PCData) => {
+    const xExtent = d3.extent(layerData.states_pca, (d) => d[0]) as [number, number]
+    const yExtent = d3.extent(layerData.states_pca, (d) => d[1]) as [number, number]
+
+    const [xRange, yRange] = [xExtent[1] - xExtent[0], yExtent[1] - yExtent[0]]
+    const [xPadding, yPadding] = [xRange * 0.2, yRange * 0.2]
+
+    return {
+      xScale: d3
+        .scaleLinear()
+        .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+        .range([margin.left, width - margin.right])
+        .nice(),
+      yScale: d3
+        .scaleLinear()
+        .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+        .range([height - margin.bottom, margin.top])
+        .nice(),
+    }
+  }
+
+  const getPointColor = (layerData: PCData, label: string) => {
+    const colorScale = createColorScale(
+      layerData.experiment_name as ExperimentType,
+      layerData.display_labels
+    )
+    if (layerData.experiment_name.includes('colour')) return colorScale(label)
+    if (layerData.experiment_name.includes('musical_note')) return colorScale(label.charAt(0))
+    return colorScale(label)
+  }
+
+  const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`
+
   useEffect(() => {
     if (!data) return
     const layers = Object.keys(data).map((key) => parseInt(key.replace('layer_', '')))
@@ -50,26 +76,19 @@ const PCAVisualization: React.FC<Props> & {
   useEffect(() => {
     if (!svgRef.current || !tooltipRef.current || !data) return
 
-    // Clear previous SVG content
-    d3.select(svgRef.current).selectAll('*').remove()
-
     const svg = d3.select(svgRef.current)
+    svg.selectAll('*').remove()
 
-    // Create separate groups for axes and zoomable content
+    const layerData = data[`layer_${currentLayer}`]
+    const { xScale, yScale } = getScales(layerData)
+
+    // Setup groups and clip path
     const axisGroup = svg.append('g').attr('class', 'axis-group')
-
     const zoomGroup = svg.append('g').attr('class', 'zoom-group')
-
     const mainGroup = zoomGroup.append('g')
     const tooltip = d3.select(tooltipRef.current)
 
-    const currentData = data[`layer_${currentLayer}`]
-    const colorScale = createColorScale(
-      currentData.experiment_name as ExperimentType,
-      currentData.display_labels
-    )
-
-    // Create clip path with extra padding
+    // Create clip path
     svg
       .append('defs')
       .append('clipPath')
@@ -80,32 +99,7 @@ const PCAVisualization: React.FC<Props> & {
       .attr('width', width - margin.left - margin.right + 40)
       .attr('height', height - margin.top - margin.bottom + 40)
 
-    // Create initial scales with padding
-    const layerData = data[`layer_${currentLayer}`]
-
-    // Calculate the full data extent and add padding
-    const xExtent = d3.extent(layerData.states_pca, (d) => d[0]) as [number, number]
-    const yExtent = d3.extent(layerData.states_pca, (d) => d[1]) as [number, number]
-
-    // Add padding by expanding the domain by a percentage
-    const xRange = xExtent[1] - xExtent[0]
-    const yRange = yExtent[1] - yExtent[0]
-    const xPadding = xRange * 0.2
-    const yPadding = yRange * 0.2
-
-    const xScale = d3
-      .scaleLinear()
-      .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
-      .range([margin.left, width - margin.right])
-      .nice()
-
-    const yScale = d3
-      .scaleLinear()
-      .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
-      .range([height - margin.bottom, margin.top])
-      .nice()
-
-    // Define zoom behavior with proper typing
+    // Setup zoom behavior
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 5])
@@ -115,18 +109,16 @@ const PCAVisualization: React.FC<Props> & {
       ])
       .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         zoomGroup.attr('transform', event.transform.toString())
+        const [newXScale, newYScale] = [
+          event.transform.rescaleX(xScale),
+          event.transform.rescaleY(yScale),
+        ]
 
-        // Update axes with zoomed scales
-        const newXScale = event.transform.rescaleX(xScale)
-        const newYScale = event.transform.rescaleY(yScale)
-
-        // Update axes to match zoom level but keep them at the edges
         axisGroup
           .select<SVGGElement>('.x-axis')
           .call(
             d3.axisBottom(newXScale).tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
           )
-
         axisGroup
           .select<SVGGElement>('.y-axis')
           .call(
@@ -134,7 +126,6 @@ const PCAVisualization: React.FC<Props> & {
           )
       })
 
-    // Apply zoom behavior to SVG with proper typing
     svg.call(zoom)
 
     // Add zoom reset button
@@ -152,30 +143,11 @@ const PCAVisualization: React.FC<Props> & {
           .call(zoom.transform, d3.zoomIdentity as ZoomTransform)
       })
 
-    const updateVisualization = (layerKey: string) => {
-      const layerData = data[layerKey]
-      if (!layerData) return
-
-      // Update scales with padding
-      const xExtent = d3.extent(layerData.states_pca, (d) => d[0]) as [number, number]
-      const yExtent = d3.extent(layerData.states_pca, (d) => d[1]) as [number, number]
-
-      const xRange = xExtent[1] - xExtent[0]
-      const yRange = yExtent[1] - yExtent[0]
-      const xPadding = xRange * 0.2
-      const yPadding = yRange * 0.2
-
-      xScale.domain([xExtent[0] - xPadding, xExtent[1] + xPadding]).nice()
-      yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding]).nice()
-
-      // Clear previous elements
+    const updateVisualization = () => {
       mainGroup.selectAll('*').remove()
-
-      // Add axes to the fixed axis group
-      // First remove old axes
       axisGroup.selectAll('.axis').remove()
 
-      // Add new axes with proper typing
+      // Add axes
       axisGroup
         .append('g')
         .attr('class', 'x-axis axis')
@@ -190,110 +162,51 @@ const PCAVisualization: React.FC<Props> & {
 
       // Add zero lines
       const gClip = mainGroup.append('g').attr('clip-path', 'url(#plot-area)')
-
-      const zeroLines = gClip.append('g').attr('class', 'zero-lines')
-
       const extendedLength = Math.max(width, height) * 100
 
-      ;[
-        { x1: -extendedLength, x2: extendedLength, y1: yScale(0), y2: yScale(0) },
-        { x1: xScale(0), x2: xScale(0), y1: -extendedLength, y2: extendedLength },
-      ].forEach((line) => {
-        zeroLines
-          .append('line')
-          .attr('class', 'zero-line')
-          .attr('x1', line.x1)
-          .attr('x2', line.x2)
-          .attr('y1', line.y1)
-          .attr('y2', line.y2)
-          .attr('stroke', '#000')
-          .attr('stroke-dasharray', '4')
-          .attr('stroke-width', '1')
-          .attr('opacity', '0.3')
-      })
+      gClip
+        .append('g')
+        .attr('class', 'zero-lines')
+        .selectAll('line')
+        .data([
+          { x1: -extendedLength, x2: extendedLength, y1: yScale(0), y2: yScale(0) },
+          { x1: xScale(0), x2: xScale(0), y1: -extendedLength, y2: extendedLength },
+        ])
+        .enter()
+        .append('line')
+        .attr('class', 'zero-line')
+        .attr('x1', (d) => d.x1)
+        .attr('x2', (d) => d.x2)
+        .attr('y1', (d) => d.y1)
+        .attr('y2', (d) => d.y2)
+        .attr('stroke', '#000')
+        .attr('stroke-dasharray', '4')
+        .attr('stroke-width', '1')
+        .attr('opacity', '0.3')
 
-      // Points group
+      // Add points and labels
+      const pointsData = layerData.display_labels.map((label, i) => ({
+        label,
+        x: layerData.states_pca[i][0],
+        y: layerData.states_pca[i][1],
+      }))
+
       const pointsGroup = gClip.append('g').attr('class', 'points-group')
 
-      const getPointColor = (label: string) => {
-        if (layerData.experiment_name.includes('colour')) {
-          return colorScale(label)
-        }
-        if (layerData.experiment_name.includes('musical_note')) {
-          return colorScale(label.charAt(0))
-        }
-        return colorScale(label)
-      }
-
-      const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`
-
-      // Update points with proper typing
-      const points = pointsGroup.selectAll<SVGCircleElement, PointData>('circle').data(
-        layerData.display_labels.map((label, i) => ({
-          label,
-          x: layerData.states_pca[i][0],
-          y: layerData.states_pca[i][1],
-        })),
-        (d: PointData) => getPointId(d.label)
-      )
-
-      // Enter new points
-      points
+      // Add points
+      pointsGroup
+        .selectAll<SVGCircleElement, PointData>('circle')
+        .data(pointsData, (d: PointData) => getPointId(d.label))
         .enter()
         .append('circle')
         .attr('id', (d) => getPointId(d.label))
         .attr('cx', (d) => xScale(d.x))
         .attr('cy', (d) => yScale(d.y))
         .attr('r', 8)
-        .attr('fill', (d) => getPointColor(d.label))
+        .attr('fill', (d) => getPointColor(layerData, d.label))
         .attr('fill-opacity', '0.8')
         .attr('stroke', '#fff')
         .attr('stroke-width', '1')
-
-      // Update existing points
-      points
-        .transition()
-        .duration(750)
-        .ease(d3.easeQuadInOut)
-        .attr('cx', (d) => xScale(d.x))
-        .attr('cy', (d) => yScale(d.y))
-
-      // Handle point labels with proper typing
-      const labels = pointsGroup.selectAll<SVGTextElement, PointData>('text').data(
-        layerData.display_labels.map((label, i) => ({
-          label,
-          x: layerData.states_pca[i][0],
-          y: layerData.states_pca[i][1],
-        })),
-        (d: PointData) => `label-${getPointId(d.label)}`
-      )
-
-      // Enter new labels
-      labels
-        .enter()
-        .append('text')
-        .attr('x', (d) => xScale(d.x))
-        .attr('y', (d) => yScale(d.y) - 12)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '10px')
-        .style('pointer-events', 'none')
-        .text((d) => d.label)
-
-      // Update existing labels
-      labels
-        .transition()
-        .duration(750)
-        .ease(d3.easeQuadInOut)
-        .attr('x', (d) => xScale(d.x))
-        .attr('y', (d) => yScale(d.y) - 12)
-
-      // Remove old elements
-      points.exit().remove()
-      labels.exit().remove()
-
-      // Update mouse events
-      pointsGroup
-        .selectAll('circle')
         .on('mouseover', (event: MouseEvent, d: PointData) => {
           d3.select(event.currentTarget as SVGCircleElement)
             .transition()
@@ -316,9 +229,22 @@ const PCAVisualization: React.FC<Props> & {
 
           tooltip.style('opacity', '0')
         })
+
+      // Add labels
+      pointsGroup
+        .selectAll<SVGTextElement, PointData>('text')
+        .data(pointsData, (d: PointData) => `label-${getPointId(d.label)}`)
+        .enter()
+        .append('text')
+        .attr('x', (d) => xScale(d.x))
+        .attr('y', (d) => yScale(d.y) - 12)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '10px')
+        .style('pointer-events', 'none')
+        .text((d) => d.label)
     }
 
-    // Add static elements (titles)
+    // Add axis labels
     svg
       .append('text')
       .attr('x', width / 2)
@@ -336,9 +262,8 @@ const PCAVisualization: React.FC<Props> & {
       .attr('font-size', '14px')
       .text('PCA Component 2')
 
-    // Initialize visualization
-    updateVisualization(`layer_${currentLayer}`)
-  }, [currentLayer, data, width, height])
+    updateVisualization()
+  }, [currentLayer, data, width, height, margin])
 
   const currentExperiment = data[`layer_${currentLayer}`]?.experiment_name || 'PCA'
   const formattedExperimentName = currentExperiment
@@ -380,7 +305,6 @@ const PCAVisualization: React.FC<Props> & {
   )
 }
 
-// Static method remains the same
 PCAVisualization.fromJSON = async (jsonPath: string): Promise<React.ReactElement> => {
   try {
     const response = await fetch(jsonPath)

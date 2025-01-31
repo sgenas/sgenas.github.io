@@ -1,4 +1,3 @@
-// types.ts
 export interface PCData {
   experiment_name: ExperimentType
   model_config: string
@@ -6,6 +5,12 @@ export interface PCData {
   states_pca: number[][]
   base_items?: string[]
   string_modifiers?: string[]
+}
+
+export interface PointData {
+  label: string
+  x: number
+  y: number
 }
 
 export type ExperimentType =
