@@ -1,32 +1,8 @@
 'use client'
-
+import { LayerData, PCData, ExperimentType, Props } from './types'
+import { createColorScale, getPointColor } from './colors'
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
-
-interface PCData {
-  experiment_name: string
-  model_config: string
-  display_labels: string[]
-  states_pca: number[][]
-  base_items?: string[]
-  string_modifiers?: string[]
-}
-
-interface LayerData {
-  [key: string]: PCData
-}
-
-interface Props {
-  data?: LayerData
-  experimentConfig?: {
-    name: string
-    base_items: string[]
-    display_labels: string[]
-    string_modifiers?: string[]
-  }
-  width?: number
-  height?: number
-}
 
 // Default data to prevent undefined errors
 const defaultData: LayerData = {
@@ -87,41 +63,11 @@ const PCAVisualization: React.FC<Props> & {
     const mainGroup = zoomGroup.append('g')
     const tooltip = d3.select(tooltipRef.current)
 
-    // Create color scale based on the experiment type
-    const getColorScale = () => {
-      const currentData = data[`layer_${currentLayer}`]
-      if (!currentData) return d3.scaleOrdinal(d3.schemeCategory10)
-
-      const experimentName = currentData.experiment_name
-      switch (experimentName) {
-        case 'musical_note':
-        case 'musical_note_flat_sharp':
-          return d3
-            .scaleOrdinal<string>()
-            .domain(['C', 'D', 'E', 'F', 'G', 'A', 'B'])
-            .range(d3.schemeCategory10)
-        case 'colour':
-        case 'hsv_colour':
-        case 'hsv_colour_tertiary':
-          return d3
-            .scaleOrdinal<string>()
-            .domain(['Red', 'Orange', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta', 'Violet'])
-            .range([
-              '#FF0000',
-              '#FFA500',
-              '#FFFF00',
-              '#00FF00',
-              '#00FFFF',
-              '#0000FF',
-              '#FF00FF',
-              '#8A2BE2',
-            ])
-        default:
-          return d3.scaleOrdinal<string>(d3.schemeCategory10)
-      }
-    }
-
-    const colorScale = getColorScale()
+    const currentData = data[`layer_${currentLayer}`]
+    const colorScale = createColorScale(
+      currentData.experiment_name as ExperimentType,
+      currentData.display_labels
+    )
 
     // Create clip path with extra padding
     svg
