@@ -6,11 +6,6 @@ draft: false
 summary: Some experiments with circular features
 ---
 
-Let's see if this page renders correctly.
-
-# PCA Visualization Analysis
-
-Here's our PCA visualization showing the relationships between different items:
 
 export const fileName = 'hsv_colour_one_red';
 
@@ -24,6 +19,129 @@ And here's the one with Gemma 2 27B:
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileName}_merged.json`}/>
 
-## Analysis
+## Summary
 
-The visualization above shows several interesting clusters...
+This project was completed as part of the AI Safety Fundamentals course. I attempted to replicate some of the paper's experimental results using different models than the original authors.
+
+The original paper demonstrated that certain features were represented circularly within the model's internal structure. Their key experiment involved prompting a language model with weekdays and months, using temporal modifiers like "early in" or "late in," which revealed a continuous pattern in the representations.
+
+Using Google's Gemma-2 models (2B, 9B and 27B), I partially replicated these results.More specifically...
+
+I also broadened the scope by testing other potentially circular concepts, finding that some—though not all—exhibited similar multidimensional patterns.
+
+## Introduction
+
+Recent work by Engels et al. in their paper ["Not All Language Model Features Are Linear"](https://arxiv.org/abs/2405.14860) revealed an intriguing discovery: language models appear to encode certain temporal concepts using circular, two-dimensional representations. As someone with a programming background but new to AI research, I found this fascinating and decided to attempt both a replication and extension of their work as part of the AI Safety Fundamentals course.
+
+My initial thought was straightforward: "Circular representations - cool! I wonder if we can find these in other models like Gemma 2B?" However, what seemed like a simple replication study quickly revealed the depth and complexity of modern AI research.
+
+I want to be very clear that I don’t know what I’m doing. I’m basically just a rando with some Python knowledge who’s been faffing around and plotting the guts of some LLMs for the first time in his life. 
+
+## Background: The Original Paper
+
+This paper investigates whether language models use multi-dimensional (rather than just one-dimensional) representations to encode information and perform computations.
+
+Some key results from the original paper:
+
+- The authors discovered that language models represent certain concepts using circular, two-dimensional features - particularly for days of the week and months of the year. These aren't just static representations - the models actively use these circular features to solve calendar-based arithmetic problems.
+- They developed mathematical definitions for identifying "true" multi-dimensional features (as opposed to features that could be broken down into independent one-dimensional components) and created methods to automatically find such features using so-called sparse autoencoders (SAEs).
+- Through intervention experiments on Mistral 7B and Llama 3 8B, they demonstrated that these circular representations are causally involved in solving problems like "Two days from Monday is..." and "Four months from January is..."
+
+## My Experimental Setup
+
+I developed a framework to analyze how different language models encode cyclical concepts in their hidden states. The core idea was to:
+
+1. Generate embeddings for various prompts involving circular concepts
+2. Extract hidden states from different layers of the models
+3. Perform dimensionality reduction using PCA
+4. Visualize the resulting embeddings to study their geometric properties
+
+This was in line with the last experiment of Engels et al. - I basically just rewrote and extended their code (here is a link to their script, and here is a link to mine).
+
+## Experiments and Results
+
+### Weekday Experiments
+
+I generated prompts ranging from "very early on Monday" to "very late on Sunday". The key findings were:
+
+- Similar circular representations appeared in the Gemma models, particularly in early layers
+- Weekdays maintained their sequential order in the representations
+- The ordering of modifiers ("early"/"late") was less consistent than in the original paper
+
+### Month/Season Experiments
+
+Using prompts with modifiers "early in" and "late in" for months and seasons:
+
+- Some layers showed structured patterns
+- The clear circular arrangements from the original paper were not consistently replicated
+- This suggests the representation might be model-architecture dependent
+
+### Color Space Experiments
+
+For the color space experiments, I started with a simple set of base colors to see if the model would represent them in a way that reflects their natural circular relationship. Here are the test prompts:
+
+```python
+base_colors = [
+    "Violet",
+    "Blue",
+    "Cyan",
+    "Green",
+    "Yellow",
+    "Orange",
+    "Red"
+]
+```
+
+This experiment revealed no clear circular patterns in the data. In the few cases where points did form circular arrangements, they failed to align with the expected ordering found in the RGB color wheel.
+
+I also tested the representation of HSV color values to see if the circular nature of the HSV color wheel would be reflected in the model's internal representations.
+
+The test prompts for this setup was:
+
+```python
+hsv_colors = [
+    "HSV 0 100 100 colour values",    # Red
+    "HSV 60 100 100 colour values",   # Yellow
+    "HSV 120 100 100 colour values",  # Green
+    "HSV 180 100 100 colour values",  # Cyan
+    "HSV 240 100 100 colour values",  # Blue
+    "HSV 300 100 100 colour values",  # Magenta
+]
+```
+
+The colours would form a circle (or polygon at least) that have the colours in order for most of the layers in the 9B model, especially in the latter part of the layers - for a cherry-picked example, see layer 38. But there were no clear circular patterns with the colors in order for the other two models.
+
+I also tried adding tertiary colors in the experiment, which is the above colour values but with the intermediary colors as well (`Yellow-Green / Chartreuse`, `Green-Cyan / Spring Green`, `Cyan-Blue / Azure`, `Violet` and `Red-Magenta / Rose`, with hue values 30, 90, 150 and so on). But this configuration showed no clear patterns at all.
+
+### Musical Note Experiments
+
+I explored two variations:
+
+1. Full chromatic scale (C, C#, D, D#, ..., A#, B)
+- No clear circular patterns emerged
+- Sharp notes (#) tended to cluster together, possibly due to tokenization effects
+1. C-major scale (C, D, E, F, G, A, B) with "flat"/"sharp" modifiers
+- Almost no circular patterns detected
+- Note ordering was not preserved in the geometric arrangement
+
+## Discussion
+
+ In the paper, there’s this (wonderfully technical / eloquent) line about another study that found multidimensional features:
+
+> However, our work finds circular features that represent latent concepts from text, while the GPT-2 learned position vectors [from that other study] are specific to tokenization, separate from the rest of the model parameters, and causally implicated only due to positional attention masking.
+> 
+> 
+> All of this and much more might have happened - I’m just showing what I found, and reminding everyone that the specific experiments I ran say nothing about causation. Also, no examination of separability was made.
+> 
+
+While I couldn't fully replicate the sophisticated analyses from the original paper, this exploration revealed interesting insights about how different models represent circular concepts. The clear temporal patterns in the original paper appear to be somewhat model-specific, and attempts to find similar patterns in other naturally circular domains produced mixed results.
+
+For future work, it would be interesting to:
+
+- Explore why temporal concepts show stronger circular patterns than other circular domains
+- Investigate the role of model architecture in determining representation geometry
+- Develop more robust methods for identifying and analyzing multi-dimensional features
+
+## Technical Notes
+
+All code and experimental configurations are available in this GitHub repo. The framework is designed to be extensible for testing other models and concept domains.
