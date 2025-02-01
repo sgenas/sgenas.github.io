@@ -1,5 +1,5 @@
 'use client'
-import { LayerData, PCData, ExperimentType, Props, PointData } from './types'
+import { LayerData, PCData, ExperimentType, experimentNameMap, Props, PointData } from './types'
 import { createColorScale } from './colors'
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
@@ -264,17 +264,22 @@ const PCAVisualization: React.FC<Props> & {
 
     updateVisualization()
   }, [currentLayer, data, width, height, margin])
-
   const currentExperiment = data[`layer_${currentLayer}`]?.experiment_name || 'PCA'
-  const formattedExperimentName = currentExperiment
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+  const formattedExperimentName: string =
+    experimentNameMap[currentExperiment as ExperimentType] ||
+    currentExperiment
+      .split('_')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+
+  const currentModel = data[`layer_${currentLayer}`]?.model_config || 'Unknown Model'
 
   return (
     <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm">
       <div className="border-b p-6">
-        <h2 className="text-xl font-semibold">{formattedExperimentName} Visualization</h2>
+        <h2 className="text-xl font-semibold">
+          {formattedExperimentName} Visualization | {currentModel}
+        </h2>
       </div>
       <div className="p-6">
         <div className="mb-8 flex flex-col items-center gap-4">

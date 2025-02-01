@@ -15,11 +15,20 @@ export interface PointData {
 
 export type ExperimentType =
   | 'month'
+  | 'weekday_very'
+  | 'colour'
+  | 'hsv_colour_one_red'
   | 'musical_note'
   | 'musical_note_flat_sharp'
-  | 'hsv_colour_one_red'
-  | 'colour'
-  | 'weekday_very'
+
+export const experimentNameMap: Record<ExperimentType, string> = {
+  month: 'Months',
+  weekday_very: 'Weekdays',
+  hsv_colour_one_red: 'HSV Colours',
+  colour: 'RGB Colours',
+  musical_note: 'Musical Notes',
+  musical_note_flat_sharp: 'Musical Notes (Flat/Sharp)',
+}
 
 export interface LayerData {
   [key: string]: PCData
