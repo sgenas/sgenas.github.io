@@ -25,16 +25,43 @@ type ZoomTransform = d3.ZoomTransform
 
 const PCAVisualization: React.FC<Props> & {
   fromJSON: (jsonPath: string) => Promise<React.ReactElement>
-} = ({ data = defaultData, experimentConfig, width = 800, height = 600 }) => {
+} = ({ data = defaultData, experimentConfig, width: propWidth, height: propHeight }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [currentLayer, setCurrentLayer] = useState(1)
   const [maxLayer, setMaxLayer] = useState(1)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
-  const margin = { top: 60, right: 50, bottom: 50, left: 50 }
+  // Responsive margins that scale with screen size
+  const getMargins = (width: number) => ({
+    top: Math.max(30, Math.min(60, width * 0.075)),
+    right: Math.max(25, Math.min(50, width * 0.0625)),
+    bottom: Math.max(30, Math.min(50, width * 0.0625)),
+    left: Math.max(30, Math.min(50, width * 0.0625)),
+  })
 
-  // Helper functions
+  // Update dimensions on mount and window resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (!containerRef.current) return
+
+      const containerWidth = containerRef.current.clientWidth
+      const baseHeight = Math.min(containerWidth * 0.75, window.innerHeight * 0.7)
+
+      setDimensions({
+        width: containerWidth,
+        height: baseHeight,
+      })
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
+
   const getScales = (layerData: PCData) => {
+    const margin = getMargins(dimensions.width)
     const xExtent = d3.extent(layerData.states_pca, (d) => d[0]) as [number, number]
     const yExtent = d3.extent(layerData.states_pca, (d) => d[1]) as [number, number]
 
@@ -45,12 +72,12 @@ const PCAVisualization: React.FC<Props> & {
       xScale: d3
         .scaleLinear()
         .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
-        .range([margin.left, width - margin.right])
+        .range([margin.left, dimensions.width - margin.right])
         .nice(),
       yScale: d3
         .scaleLinear()
         .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
-        .range([height - margin.bottom, margin.top])
+        .range([dimensions.height - margin.bottom, margin.top])
         .nice(),
     }
   }
@@ -81,8 +108,15 @@ const PCAVisualization: React.FC<Props> & {
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
 
+    const margin = getMargins(dimensions.width)
     const layerData = data[`layer_${currentLayer}`]
     const { xScale, yScale } = getScales(layerData)
+
+    // Adjust font sizes based on container width
+    const getFontSize = (baseSize: number) => {
+      const scale = Math.min(dimensions.width / 800, 1)
+      return Math.max(baseSize * scale, baseSize * 0.75)
+    }
 
     // Setup groups and clip path
     const axisGroup = svg.append('g').attr('class', 'axis-group')
@@ -98,73 +132,74 @@ const PCAVisualization: React.FC<Props> & {
       .append('rect')
       .attr('x', margin.left - 20)
       .attr('y', margin.top - 20)
-      .attr('width', width - margin.left - margin.right + 40)
-      .attr('height', height - margin.top - margin.bottom + 40)
+      .attr('width', dimensions.width - margin.left - margin.right + 40)
+      .attr('height', dimensions.height - margin.top - margin.bottom + 40)
 
-    // Setup zoom behavior
+    // Setup zoom behavior with adjusted extents
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 5])
       .extent([
         [margin.left, margin.top],
-        [width - margin.right, height - margin.bottom],
+        [dimensions.width - margin.right, dimensions.height - margin.bottom],
       ])
-      .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+      .on('zoom', (event) => {
         zoomGroup.attr('transform', event.transform.toString())
         const [newXScale, newYScale] = [
           event.transform.rescaleX(xScale),
           event.transform.rescaleY(yScale),
         ]
 
+        // Update axes with responsive tick sizes
         axisGroup
           .select<SVGGElement>('.x-axis')
           .call(
-            d3.axisBottom(newXScale).tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+            d3
+              .axisBottom(newXScale)
+              .tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+              .tickSize(-6)
           )
+          .selectAll('text')
+          .style('font-size', `${getFontSize(10)}px`)
+
         axisGroup
           .select<SVGGElement>('.y-axis')
           .call(
-            d3.axisLeft(newYScale).tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+            d3
+              .axisLeft(newYScale)
+              .tickFormat((d) => (typeof d === 'number' ? d.toFixed(2) : ''))
+              .tickSize(-6)
           )
+          .selectAll('text')
+          .style('font-size', `${getFontSize(10)}px`)
       })
 
     svg.call(zoom)
-
-    // Add zoom reset button
-    d3.select(svgRef.current.parentNode as HTMLElement)
-      .append('button')
-      .attr(
-        'class',
-        'absolute top-4 right-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm dark:bg-stone-800'
-      )
-      .text('Reset Zoom')
-      .on('click', () => {
-        svg
-          .transition()
-          .duration(750)
-          .call(zoom.transform, d3.zoomIdentity as ZoomTransform)
-      })
 
     const updateVisualization = () => {
       mainGroup.selectAll('*').remove()
       axisGroup.selectAll('.axis').remove()
 
-      // Add axes
+      // Add axes with responsive styling
       axisGroup
         .append('g')
         .attr('class', 'x-axis axis')
-        .attr('transform', `translate(0,${height - margin.bottom})`)
+        .attr('transform', `translate(0,${dimensions.height - margin.bottom})`)
         .call(d3.axisBottom(xScale))
+        .selectAll('text')
+        .style('font-size', `${getFontSize(10)}px`)
 
       axisGroup
         .append('g')
         .attr('class', 'y-axis axis')
         .attr('transform', `translate(${margin.left},0)`)
         .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('font-size', `${getFontSize(10)}px`)
 
       // Add zero lines
       const gClip = mainGroup.append('g').attr('clip-path', 'url(#plot-area)')
-      const extendedLength = Math.max(width, height) * 100
+      const extendedLength = Math.max(dimensions.width, dimensions.height) * 100
 
       gClip
         .append('g')
@@ -185,26 +220,24 @@ const PCAVisualization: React.FC<Props> & {
         //.attr('stroke-dasharray', '4')
         .attr('stroke-width', '0.5')
         .attr('opacity', '0.3')
-
-      // Add points and labels
+      // Add points with responsive sizes
       const pointsData = layerData.display_labels.map((label, i) => ({
         label,
         x: layerData.states_pca[i][0],
         y: layerData.states_pca[i][1],
       }))
 
-      const pointsGroup = gClip.append('g').attr('class', 'points-group')
+      const pointRadius = Math.max(4, Math.min(8, dimensions.width / 100))
+      const pointsGroup = mainGroup.append('g').attr('clip-path', 'url(#plot-area)')
 
-      // Add points
       pointsGroup
         .selectAll<SVGCircleElement, PointData>('circle')
-        .data(pointsData, (d: PointData) => getPointId(d.label))
+        .data(pointsData)
         .enter()
         .append('circle')
-        .attr('id', (d) => getPointId(d.label))
         .attr('cx', (d) => xScale(d.x))
         .attr('cy', (d) => yScale(d.y))
-        .attr('r', 8)
+        .attr('r', pointRadius)
         .attr('fill', (d) => getPointColor(layerData, d.label))
         .attr('fill-opacity', '0.8')
         //.attr('stroke', '#fff')
@@ -235,39 +268,40 @@ const PCAVisualization: React.FC<Props> & {
       // Add labels
       pointsGroup
         .selectAll<SVGTextElement, PointData>('text')
-        .data(pointsData, (d: PointData) => `label-${getPointId(d.label)}`)
+        .data(pointsData)
         .enter()
         .append('text')
         .attr('x', (d) => xScale(d.x))
-        .attr('y', (d) => yScale(d.y) - 12)
+        .attr('y', (d) => yScale(d.y) - pointRadius - 4)
         .attr('text-anchor', 'middle')
-        .attr('font-size', '10px')
+        .style('font-size', `${getFontSize(10)}px`)
         .style('pointer-events', 'none')
         .text((d) => d.label)
     }
 
-    // Add axis labels
+    // Add axis labels with responsive positioning and font sizes
     svg
       .append('text')
-      .attr('x', width / 2)
-      .attr('y', height - margin.bottom / 3)
+      .attr('x', dimensions.width / 2)
+      .attr('y', dimensions.height - margin.bottom / 3)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
+      .style('font-size', `${getFontSize(14)}px`)
       .text('PCA Component 1')
 
     svg
       .append('text')
       .attr('transform', 'rotate(-90)')
-      .attr('x', -(height / 2))
+      .attr('x', -(dimensions.height / 2))
       .attr('y', margin.left / 3)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
+      .style('font-size', `${getFontSize(14)}px`)
       .text('PCA Component 2')
 
     updateVisualization()
-  }, [currentLayer, data, width, height, margin])
+  }, [currentLayer, data, dimensions])
+
   const currentExperiment = data[`layer_${currentLayer}`]?.experiment_name || 'PCA'
-  const formattedExperimentName: string =
+  const formattedExperimentName =
     experimentNameMap[currentExperiment as ExperimentType] ||
     currentExperiment
       .split('_')
@@ -278,13 +312,13 @@ const PCAVisualization: React.FC<Props> & {
 
   return (
     <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm dark:bg-stone-700">
-      <div className="border-b p-6">
-        <h2 className="text-xl font-semibold">
+      <div className="border-b p-4 sm:p-6">
+        <h2 className="text-lg font-semibold sm:text-xl">
           {formattedExperimentName} Visualization | {currentModel}
         </h2>
       </div>
-      <div className="p-6">
-        <div className="mb-8 flex flex-col items-center gap-4">
+      <div className="p-4 sm:p-6" ref={containerRef}>
+        <div className="mb-6 flex flex-col items-center gap-4 sm:mb-8">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">Layer:</span>
             <span className="text-sm" id="layer-number">
@@ -301,7 +335,12 @@ const PCAVisualization: React.FC<Props> & {
           />
         </div>
         <div className="relative">
-          <svg ref={svgRef} width={width} height={height} className="mx-auto" />
+          <svg
+            ref={svgRef}
+            width={dimensions.width}
+            height={dimensions.height}
+            className="mx-auto"
+          />
           <div
             ref={tooltipRef}
             className="pointer-events-none absolute rounded border border-gray-200 bg-white px-2 py-1 text-xs opacity-0 shadow"
