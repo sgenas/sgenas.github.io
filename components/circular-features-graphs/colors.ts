@@ -16,16 +16,14 @@ const coreColors = {
   green: '#00FF00',
   cyan: '#00FFFF',
   blue: '#0000FF',
-  purple: '#8A2BE2',
+  purple: '#7700FF',
   magenta: '#FF00FF',
 
   // Additional shades
-  lightBlue: '#66CCEE',
-  darkBlue: '#0077BB',
-  lightGreen: '#90EE90',
-  darkGreen: '#228B22',
-  gold: '#DAA520',
-  brown: '#8B4513',
+  blueGreen: '#00FF77',
+  yellowGreen: '#77FF00',
+  pinkRed: '#FF0077',
+  mediumBlue: '#0077FF',
 }
 
 const colorPalettes = {
@@ -68,36 +66,36 @@ const colorPalettes = {
 }
 
 const monthColors = {
-  // Winter months - blues
-  Dec: coreColors.darkBlue,
-  Jan: coreColors.blue,
-  Feb: coreColors.lightBlue,
-  // Spring months - greens
-  Mar: coreColors.lightGreen,
+  // Winter months - blue to cyan progression
+  Dec: coreColors.blue,
+  Jan: coreColors.mediumBlue,
+  Feb: coreColors.cyan,
+  // Spring months - cyan through green to yellow
+  Mar: coreColors.blueGreen,
   Apr: coreColors.green,
-  May: coreColors.darkGreen,
-  // Summer months - warm colors
+  May: coreColors.yellowGreen,
+  // Summer months - yellow through orange to red
   Jun: coreColors.yellow,
   Jul: coreColors.orange,
   Aug: coreColors.red,
-  // Fall months - earth tones
-  Sep: coreColors.gold,
-  Oct: coreColors.orange,
-  Nov: coreColors.brown,
-  // Seasons
+  // Fall months - red through magenta to purple
+  Sep: coreColors.pinkRed,
+  Oct: coreColors.magenta,
+  Nov: coreColors.purple,
+  // Seasons - using key colors from the progression
   Winter: coreColors.blue,
   Spring: coreColors.green,
-  Summer: coreColors.orange,
-  Fall: coreColors.gold,
+  Summer: coreColors.yellow,
+  Fall: coreColors.magenta,
 }
 
 const weekdayColors = {
-  Mon: coreColors.blue, // Start with cool colors
+  Mon: coreColors.blue,
   Tue: coreColors.cyan,
-  Wed: coreColors.green, // Middle of week transitions
+  Wed: coreColors.green,
   Thu: coreColors.yellow,
-  Fri: coreColors.orange, // Warm up toward weekend
-  Sat: coreColors.red, // Weekend is warm colors
+  Fri: coreColors.orange,
+  Sat: coreColors.red,
   Sun: coreColors.magenta,
 }
 
