@@ -6,36 +6,19 @@ draft: false
 summary: Some experiments with circular features
 ---
 
-
-export const fileName = 'hsv_colour_one_red';
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileName}_merged.json`}/>
-
-Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileName}_merged.json`}/>
-
-And here's the one with Gemma 2 27B:
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileName}_merged.json`}/>
-
 ## Summary
 
 This project was completed as part of the AI Safety Fundamentals course. I attempted to replicate some of the paper's experimental results using different models than the original authors.
 
 The original paper demonstrated that certain features were represented circularly within the model's internal structure. Their key experiment involved prompting a language model with weekdays and months, using temporal modifiers like "early in" or "late in," which revealed a continuous pattern in the representations.
 
-Using Google's Gemma-2 models (2B, 9B and 27B), I partially replicated these results.More specifically...
+Using Google's Gemma-2 models (2B, 9B and 27B), I partially replicated these results. More specifically...
 
 I also broadened the scope by testing other potentially circular concepts, finding that some—though not all—exhibited similar multidimensional patterns.
 
 ## Introduction
 
-Recent work by Engels et al. in their paper ["Not All Language Model Features Are Linear"](https://arxiv.org/abs/2405.14860) revealed an intriguing discovery: language models appear to encode certain temporal concepts using circular, two-dimensional representations. As someone with a programming background but new to AI research, I found this fascinating and decided to attempt both a replication and extension of their work as part of the AI Safety Fundamentals course.
-
-My initial thought was straightforward: "Circular representations - cool! I wonder if we can find these in other models like Gemma 2B?" However, what seemed like a simple replication study quickly revealed the depth and complexity of modern AI research.
-
-I want to be very clear that I don’t know what I’m doing. I’m basically just a rando with some Python knowledge who’s been faffing around and plotting the guts of some LLMs for the first time in his life. 
+Recent work by Engels et al. in their paper [Not All Language Model Features Are Linear](https://arxiv.org/abs/2405.14860) showed that language models seem to encode certain concepts in a circular way, and they showed that the models also *use* these representation in arithmetic operations. [more]
 
 ## Background: The Original Paper
 
@@ -68,6 +51,18 @@ I generated prompts ranging from "very early on Monday" to "very late on Sunday"
 - Weekdays maintained their sequential order in the representations
 - The ordering of modifiers ("early"/"late") was less consistent than in the original paper
 
+export const fileNameWeekday = 'weekday_very';
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameWeekday}_merged.json`}/>
+
+Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameWeekday}_merged.json`}/>
+
+And here's the one with Gemma 2 27B:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameWeekday}_merged.json`}/>
+
 ### Month/Season Experiments
 
 Using prompts with modifiers "early in" and "late in" for months and seasons:
@@ -75,6 +70,18 @@ Using prompts with modifiers "early in" and "late in" for months and seasons:
 - Some layers showed structured patterns
 - The clear circular arrangements from the original paper were not consistently replicated
 - This suggests the representation might be model-architecture dependent
+
+export const fileNameMonth = 'month';
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameMonth}_merged.json`}/>
+
+Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameMonth}_merged.json`}/>
+
+And here's the one with Gemma 2 27B:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameMonth}_merged.json`}/>
 
 ### Color Space Experiments
 
@@ -108,6 +115,17 @@ hsv_colors = [
     "HSV 300 100 100 colour values",  # Magenta
 ]
 ```
+export const fileNameHSV = 'hsv_colour_one_red';
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameHSV}_merged.json`}/>
+
+Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameHSV}_merged.json`}/>
+
+And here's the one with Gemma 2 27B:
+
+<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameHSV}_merged.json`}/>
 
 The colours would form a circle (or polygon at least) that have the colours in order for most of the layers in the 9B model, especially in the latter part of the layers - for a cherry-picked example, see layer 38. But there were no clear circular patterns with the colors in order for the other two models.
 
@@ -126,13 +144,12 @@ I explored two variations:
 
 ## Discussion
 
- In the paper, there’s this (wonderfully technical / eloquent) line about another study that found multidimensional features:
+ In the paper, there’s this (wonderfully technical) line about another study that found multidimensional features:
 
 > However, our work finds circular features that represent latent concepts from text, while the GPT-2 learned position vectors [from that other study] are specific to tokenization, separate from the rest of the model parameters, and causally implicated only due to positional attention masking.
 > 
-> 
-> All of this and much more might have happened - I’m just showing what I found, and reminding everyone that the specific experiments I ran say nothing about causation. Also, no examination of separability was made.
-> 
+
+All of this and much more might have happened - I’m just showing what I found, and reminding everyone that the specific experiments I ran say nothing about causation. Also, no examination of separability was made.
 
 While I couldn't fully replicate the sophisticated analyses from the original paper, this exploration revealed interesting insights about how different models represent circular concepts. The clear temporal patterns in the original paper appear to be somewhat model-specific, and attempts to find similar patterns in other naturally circular domains produced mixed results.
 
