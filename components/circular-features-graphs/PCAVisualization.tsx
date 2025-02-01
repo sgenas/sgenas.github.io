@@ -60,19 +60,21 @@ const PCAVisualization: React.FC<Props> & {
       layerData.experiment_name as ExperimentType,
       layerData.display_labels
     )
-    if (layerData.experiment_name.includes('colour')) return colorScale(label)
-    if (layerData.experiment_name.includes('musical_note')) return colorScale(label.charAt(0))
+    //if (layerData.experiment_name.includes('colour')) return colorScale(label)
+    //if (layerData.experiment_name.includes('musical_note')) return colorScale(label.charAt(0))
     return colorScale(label)
   }
 
   const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`
 
+  // Update max layer when data changes
   useEffect(() => {
     if (!data) return
     const layers = Object.keys(data).map((key) => parseInt(key.replace('layer_', '')))
     setMaxLayer(Math.max(...layers))
   }, [data])
 
+  // Update visualization when data or current layer changes
   useEffect(() => {
     if (!svgRef.current || !tooltipRef.current || !data) return
 
@@ -180,8 +182,8 @@ const PCAVisualization: React.FC<Props> & {
         .attr('y1', (d) => d.y1)
         .attr('y2', (d) => d.y2)
         .attr('stroke', '#000')
-        .attr('stroke-dasharray', '4')
-        .attr('stroke-width', '1')
+        //.attr('stroke-dasharray', '4')
+        .attr('stroke-width', '0.5')
         .attr('opacity', '0.3')
 
       // Add points and labels
@@ -205,8 +207,8 @@ const PCAVisualization: React.FC<Props> & {
         .attr('r', 8)
         .attr('fill', (d) => getPointColor(layerData, d.label))
         .attr('fill-opacity', '0.8')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', '1')
+        //.attr('stroke', '#fff')
+        //.attr('stroke-width', '1')
         .on('mouseover', (event: MouseEvent, d: PointData) => {
           d3.select(event.currentTarget as SVGCircleElement)
             .transition()
