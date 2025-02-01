@@ -133,7 +133,7 @@ const PCAVisualization: React.FC<Props> & {
       .append('button')
       .attr(
         'class',
-        'absolute top-4 right-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm'
+        'absolute top-4 right-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm dark:bg-stone-800'
       )
       .text('Reset Zoom')
       .on('click', () => {
@@ -275,7 +275,7 @@ const PCAVisualization: React.FC<Props> & {
   const currentModel = data[`layer_${currentLayer}`]?.model_config || 'Unknown Model'
 
   return (
-    <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm">
+    <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm dark:bg-stone-700">
       <div className="border-b p-6">
         <h2 className="text-xl font-semibold">
           {formattedExperimentName} Visualization | {currentModel}

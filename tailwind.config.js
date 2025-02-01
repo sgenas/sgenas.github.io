@@ -27,7 +27,10 @@ module.exports = {
       },
       colors: {
         primary: colors.amber,
-        gray: colors.slate,
+        gray: colors.stone,
+        background: {
+          primary: '#fffbf7',
+        },
       },
       zIndex: {
         60: '60',
