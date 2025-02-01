@@ -21,7 +21,21 @@ const defaultData: LayerData = {
   },
 }
 
-type ZoomTransform = d3.ZoomTransform
+const shouldShowLabel = (experimentName: string, label: string): boolean => {
+  switch (experimentName) {
+    case 'month':
+      return !label.includes('Early In') && !label.includes('Late In')
+    case 'weekday_very':
+      return !label.includes('Very Early On') && !label.includes('Very Late On')
+    case 'hsv_colour_one_red':
+    case 'colour':
+    case 'musical_note':
+    case 'musical_note_flat_sharp':
+      return true
+    default:
+      return true
+  }
+}
 
 const PCAVisualization: React.FC<Props> & {
   fromJSON: (jsonPath: string) => Promise<React.ReactElement>
@@ -225,6 +239,7 @@ const PCAVisualization: React.FC<Props> & {
         label,
         x: layerData.states_pca[i][0],
         y: layerData.states_pca[i][1],
+        showLabel: shouldShowLabel(layerData.experiment_name, label),
       }))
 
       const pointRadius = Math.max(4, Math.min(8, dimensions.width / 100))
@@ -239,7 +254,7 @@ const PCAVisualization: React.FC<Props> & {
         .attr('cy', (d) => yScale(d.y))
         .attr('r', pointRadius)
         .attr('fill', (d) => getPointColor(layerData, d.label))
-        .attr('fill-opacity', '0.8')
+        .attr('fill-opacity', '0.5')
         //.attr('stroke', '#fff')
         //.attr('stroke-width', '1')
         .on('mouseover', (event: MouseEvent, d: PointData) => {
@@ -268,7 +283,7 @@ const PCAVisualization: React.FC<Props> & {
       // Add labels
       pointsGroup
         .selectAll<SVGTextElement, PointData>('text')
-        .data(pointsData)
+        .data(pointsData.filter((d) => d.showLabel))
         .enter()
         .append('text')
         .attr('x', (d) => xScale(d.x))
