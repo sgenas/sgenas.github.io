@@ -106,8 +106,6 @@ const PCAVisualization: React.FC<Props> & {
     return colorScale(label)
   }
 
-  const getPointId = (label: string) => `point-${label.replace(/\s+/g, '-')}`
-
   // Update max layer when data changes
   useEffect(() => {
     if (!data) return
@@ -136,7 +134,23 @@ const PCAVisualization: React.FC<Props> & {
     const axisGroup = svg.append('g').attr('class', 'axis-group')
     const zoomGroup = svg.append('g').attr('class', 'zoom-group')
     const mainGroup = zoomGroup.append('g')
-    const tooltip = d3.select(tooltipRef.current)
+    let tooltip = d3.select(containerRef.current).select('.tooltip')
+    if (tooltip.empty()) {
+      tooltip = d3
+        .select(containerRef.current)
+        .append('div')
+        .attr('class', 'tooltip')
+        .style('position', 'fixed')
+        .style('visibility', 'hidden')
+        .style('background-color', 'white')
+        .style('padding', '8px')
+        .style('border', '1px solid #ddd')
+        .style('border-radius', '4px')
+        .style('font-size', '12px')
+        .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
+        .style('pointer-events', 'none')
+        .style('z-index', '100')
+    }
 
     // Create clip path
     svg
@@ -257,27 +271,50 @@ const PCAVisualization: React.FC<Props> & {
         .attr('fill-opacity', '0.5')
         //.attr('stroke', '#fff')
         //.attr('stroke-width', '1')
-        .on('mouseover', (event: MouseEvent, d: PointData) => {
-          d3.select(event.currentTarget as SVGCircleElement)
+        .on('mouseover', (event, d) => {
+          const circle = d3.select(event.currentTarget)
+          circle
             .transition()
             .duration(200)
-            .attr('r', 10)
+            .attr('r', pointRadius * 1.5)
             .attr('fill-opacity', '1')
 
-          tooltip
-            .style('opacity', '1')
-            .style('left', `${event.pageX + 10}px`)
-            .style('top', `${event.pageY - 10}px`)
-            .text(d.label)
+          // Get the actual position relative to the viewport
+          const rect = event.currentTarget.getBoundingClientRect()
+          const tooltipWidth = 100 // Approximate tooltip width
+          const tooltipHeight = 40 // Approximate tooltip height
+
+          // Calculate position to keep tooltip within viewport
+          let left = rect.left + rect.width / 2
+          let top = rect.top - tooltipHeight - 10
+
+          // Adjust if tooltip would go off screen
+          if (left + tooltipWidth > window.innerWidth) {
+            left = window.innerWidth - tooltipWidth - 10
+          }
+          if (top < 0) {
+            top = rect.bottom + 10
+          }
+
+          tooltip.style('visibility', 'visible').style('left', `${left}px`).style('top', `${top}px`)
+            .html(`
+              <div class="text-left">
+                <div class="font-medium">${d.label}</div>
+                <div class="font-mono text-xs text-gray-600">
+                  <b>comp 1</b>: ${d.x.toFixed(2)}<br/>
+                  <b>comp 2</b>: ${d.y.toFixed(2)}
+                </div>
+              </div>
+            `)
         })
-        .on('mouseout', (event: MouseEvent) => {
-          d3.select(event.currentTarget as SVGCircleElement)
+        .on('mouseout', (event) => {
+          d3.select(event.currentTarget)
             .transition()
             .duration(200)
-            .attr('r', 8)
-            .attr('fill-opacity', '0.8')
+            .attr('r', pointRadius)
+            .attr('fill-opacity', '0.5')
 
-          tooltip.style('opacity', '0')
+          tooltip.style('visibility', 'hidden')
         })
 
       // Add labels
@@ -298,7 +335,7 @@ const PCAVisualization: React.FC<Props> & {
     svg
       .append('text')
       .attr('x', dimensions.width / 2)
-      .attr('y', dimensions.height - margin.bottom / 3)
+      .attr('y', dimensions.height - margin.bottom / 3 + 10)
       .attr('text-anchor', 'middle')
       .style('font-size', `${getFontSize(14)}px`)
       .text('PCA Component 1')
@@ -307,7 +344,7 @@ const PCAVisualization: React.FC<Props> & {
       .append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -(dimensions.height / 2))
-      .attr('y', margin.left / 3)
+      .attr('y', margin.left / 3 - 5)
       .attr('text-anchor', 'middle')
       .style('font-size', `${getFontSize(14)}px`)
       .text('PCA Component 2')
