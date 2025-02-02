@@ -88,11 +88,7 @@ Here’s the output data for all three models:
 
 export const fileNameWeekday = 'weekday_very';
 
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameWeekday}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameWeekday}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameWeekday}_merged.json`}/>
+<PCAVisualization dataPath={`/data/circular-features/${fileNameWeekday}_merged.json`}/>
 
 ### Months (and Seasons) Experiment
 
@@ -107,11 +103,7 @@ The findings were that:
 
 export const fileNameMonth = 'month';
 
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameMonth}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameMonth}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameMonth}_merged.json`}/>
+<PCAVisualization dataPath={`/data/circular-features/${fileNameMonth}_merged.json`}/>
 
 ### Colour Space Experiments
 
@@ -148,11 +140,7 @@ hsv_colors = [
 
 export const fileNameHSV = 'hsv_colour_one_red';
 
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameHSV}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameHSV}_merged.json`}/>
-
-<PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameHSV}_merged.json`}/>
+<PCAVisualization dataPath={`/data/circular-features/${fileNameHSV}_merged.json`}/>
 
 The colours would form a circle (or polygon at least) that had the colours in order for most of the layers in the 9B model, especially in the latter part of the layers - for a cherry-picked example, check out layer 38. But there were no clear circular patterns with the colors in order for the other two models.
 

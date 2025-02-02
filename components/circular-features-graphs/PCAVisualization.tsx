@@ -1,27 +1,41 @@
 'use client'
-import { LayerData, PCData, ExperimentType, experimentNameMap, Props, PointData } from './types'
-import { createColorScale } from './colors'
+
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 
-const defaultData: LayerData = {
-  layer_1: {
-    experiment_name: 'colour',
-    model_config: 'Gemma-2-2B',
-    display_labels: ['Violet', 'Blue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red'],
-    states_pca: [
-      [57.76558303833008, 32.144588470458984],
-      [-11.107534408569336, 0.37020039558410645],
-      [25.111370086669922, -58.3227424621582],
-      [-22.679500579833984, -3.9491796493530273],
-      [-20.315980911254883, 6.824947357177734],
-      [-6.49876594543457, 10.885591506958008],
-      [-22.27518653869629, 12.046592712402344],
-    ],
+import {
+  LayerData,
+  PCAData,
+  ExperimentName,
+  experimentNameMap,
+  ModelName,
+  ModelData,
+  Props,
+  PointData,
+} from './types'
+import { createColorScale } from './colors'
+import ModelSelector from './ModelSelector'
+
+const defaultData: ModelData = {
+  model_1: {
+    layer_1: {
+      experiment_name: 'colour',
+      model_name: 'Gemma-2-2B',
+      display_labels: ['Violet', 'Blue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red'],
+      states_pca: [
+        [57.76558303833008, 32.144588470458984],
+        [-11.107534408569336, 0.37020039558410645],
+        [25.111370086669922, -58.3227424621582],
+        [-22.679500579833984, -3.9491796493530273],
+        [-20.315980911254883, 6.824947357177734],
+        [-6.49876594543457, 10.885591506958008],
+        [-22.27518653869629, 12.046592712402344],
+      ],
+    },
   },
 }
 
-const shouldShowLabel = (experimentName: string, label: string): boolean => {
+const shouldShowLabel = (experimentName: ExperimentName, label: string): boolean => {
   switch (experimentName) {
     case 'month':
       return !label.includes('Early In') && !label.includes('Late In')
@@ -37,13 +51,27 @@ const shouldShowLabel = (experimentName: string, label: string): boolean => {
   }
 }
 
+const getMaxLayer = (model: ModelName): number => {
+  switch (model) {
+    case 'Gemma-2-2B':
+      return 26
+    case 'Gemma-2-9B':
+      return 42
+    case 'Gemma-2-27B':
+      return 46
+    default:
+      return 1
+  }
+}
+
 const PCAVisualization: React.FC<Props> & {
   fromJSON: (jsonPath: string) => Promise<React.ReactElement>
-} = ({ data = defaultData, experimentConfig, width: propWidth, height: propHeight }) => {
+} = ({ data = defaultData }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [currentLayer, setCurrentLayer] = useState(1)
+  const [currentModel, setCurrentModel] = useState<ModelName>('Gemma-2-2B')
+  const [currentLayer, setCurrentLayer] = useState<number>(1)
   const [maxLayer, setMaxLayer] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
@@ -74,7 +102,7 @@ const PCAVisualization: React.FC<Props> & {
     return () => window.removeEventListener('resize', updateDimensions)
   }, [])
 
-  const getScales = (layerData: PCData) => {
+  const getScales = (layerData: PCAData) => {
     const margin = getMargins(dimensions.width)
     const xExtent = d3.extent(layerData.states_pca, (d) => d[0]) as [number, number]
     const yExtent = d3.extent(layerData.states_pca, (d) => d[1]) as [number, number]
@@ -96,13 +124,11 @@ const PCAVisualization: React.FC<Props> & {
     }
   }
 
-  const getPointColor = (layerData: PCData, label: string) => {
+  const getPointColor = (layerData: PCAData, label: string) => {
     const colorScale = createColorScale(
-      layerData.experiment_name as ExperimentType,
+      layerData.experiment_name as ExperimentName,
       layerData.display_labels
     )
-    //if (layerData.experiment_name.includes('colour')) return colorScale(label)
-    //if (layerData.experiment_name.includes('musical_note')) return colorScale(label.charAt(0))
     return colorScale(label)
   }
 
@@ -110,8 +136,8 @@ const PCAVisualization: React.FC<Props> & {
   useEffect(() => {
     if (!data) return
     const layers = Object.keys(data).map((key) => parseInt(key.replace('layer_', '')))
-    setMaxLayer(Math.max(...layers))
-  }, [data])
+    setMaxLayer(getMaxLayer(currentModel))
+  }, [data, currentModel])
 
   // Update visualization when data or current layer changes
   useEffect(() => {
@@ -121,7 +147,7 @@ const PCAVisualization: React.FC<Props> & {
     svg.selectAll('*').remove()
 
     const margin = getMargins(dimensions.width)
-    const layerData = data[`layer_${currentLayer}`]
+    const layerData = data[currentModel][`layer_${currentLayer}`]
     const { xScale, yScale } = getScales(layerData)
 
     // Adjust font sizes based on container width
@@ -350,27 +376,30 @@ const PCAVisualization: React.FC<Props> & {
       .text('PCA Component 2')
 
     updateVisualization()
-  }, [currentLayer, data, dimensions])
+  }, [currentModel, currentLayer, data, dimensions])
 
-  const currentExperiment = data[`layer_${currentLayer}`]?.experiment_name || 'PCA'
+  const currentExperiment = data[currentModel][`layer_${currentLayer}`]?.experiment_name || 'PCA'
   const formattedExperimentName =
-    experimentNameMap[currentExperiment as ExperimentType] ||
+    experimentNameMap[currentExperiment as ExperimentName] ||
     currentExperiment
       .split('_')
       .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ')
 
-  const currentModel = data[`layer_${currentLayer}`]?.model_config || 'Unknown Model'
-
   return (
     <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm dark:bg-zinc-700">
       <div className="border-b p-4 sm:p-6">
         <h2 className="text-lg font-semibold sm:text-xl">
-          {formattedExperimentName} Visualization | {currentModel}
+          {formattedExperimentName} Visualization
         </h2>
       </div>
       <div className="p-4 sm:p-6" ref={containerRef}>
         <div className="mb-6 flex flex-col items-center gap-4 sm:mb-8">
+          <ModelSelector
+            currentModel={currentModel}
+            setCurrentModel={setCurrentModel}
+            id={currentExperiment}
+          />
           <div className="flex items-center gap-4">
             <span className="font-mono text-sm font-medium">Layer:</span>
             <span className="font-mono text-sm" id="layer-number">

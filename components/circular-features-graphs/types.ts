@@ -1,6 +1,6 @@
-export interface PCData {
-  experiment_name: ExperimentType
-  model_config: string
+export interface PCAData {
+  experiment_name: ExperimentName
+  model_name: ModelName
   display_labels: string[]
   states_pca: number[][]
   base_items?: string[]
@@ -13,7 +13,7 @@ export interface PointData {
   y: number
 }
 
-export type ExperimentType =
+export type ExperimentName =
   | 'month'
   | 'weekday_very'
   | 'colour'
@@ -21,7 +21,9 @@ export type ExperimentType =
   | 'musical_note'
   | 'musical_note_flat_sharp'
 
-export const experimentNameMap: Record<ExperimentType, string> = {
+export type ModelName = 'Gemma-2-2B' | 'Gemma-2-9B' | 'Gemma-2-27B'
+
+export const experimentNameMap: Record<ExperimentName, string> = {
   month: 'Months',
   weekday_very: 'Weekdays',
   hsv_colour_one_red: 'HSV Colours',
@@ -31,7 +33,11 @@ export const experimentNameMap: Record<ExperimentType, string> = {
 }
 
 export interface LayerData {
-  [key: string]: PCData
+  [key: string]: PCAData
+}
+
+export interface ModelData {
+  [key: string]: LayerData
 }
 
 export interface Props {
