@@ -363,7 +363,7 @@ const PCAVisualization: React.FC<Props> & {
   const currentModel = data[`layer_${currentLayer}`]?.model_config || 'Unknown Model'
 
   return (
-    <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm dark:bg-stone-700">
+    <div className="mx-auto w-full max-w-4xl rounded-lg border bg-white shadow-sm dark:bg-zinc-700">
       <div className="border-b p-4 sm:p-6">
         <h2 className="text-lg font-semibold sm:text-xl">
           {formattedExperimentName} Visualization | {currentModel}
