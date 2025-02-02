@@ -12,6 +12,7 @@ import {
   ModelData,
   Props,
   PointData,
+  LabeledPointData,
 } from './types'
 import { createColorScale } from './colors'
 import ModelSelector from './ModelSelector'
@@ -287,13 +288,13 @@ const PCAVisualization: React.FC<Props> & {
 
       pointsGroup
         .selectAll<SVGCircleElement, PointData>('circle')
-        .data(pointsData)
+        .data<PointData>(pointsData)
         .enter()
         .append('circle')
-        .attr('cx', (d) => xScale(d.x))
-        .attr('cy', (d) => yScale(d.y))
+        .attr('cx', (d: PointData) => xScale(d.x))
+        .attr('cy', (d: PointData) => yScale(d.y))
         .attr('r', pointRadius)
-        .attr('fill', (d) => getPointColor(layerData, d.label))
+        .attr('fill', (d: PointData) => getPointColor(layerData, d.label))
         .attr('fill-opacity', '0.5')
         //.attr('stroke', '#fff')
         //.attr('stroke-width', '1')
@@ -346,15 +347,15 @@ const PCAVisualization: React.FC<Props> & {
       // Add labels
       pointsGroup
         .selectAll<SVGTextElement, PointData>('text')
-        .data(pointsData.filter((d) => d.showLabel))
+        .data(pointsData.filter((d: LabeledPointData) => d.showLabel))
         .enter()
         .append('text')
-        .attr('x', (d) => xScale(d.x))
-        .attr('y', (d) => yScale(d.y) - pointRadius - 4)
+        .attr('x', (d: PointData) => xScale(d.x))
+        .attr('y', (d: PointData) => yScale(d.y) - pointRadius - 4)
         .attr('text-anchor', 'middle')
         .style('font-size', `${getFontSize(10)}px`)
         .style('pointer-events', 'none')
-        .text((d) => d.label)
+        .text((d: PointData) => d.label)
     }
 
     // Add axis labels with responsive positioning and font sizes

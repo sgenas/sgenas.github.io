@@ -13,6 +13,10 @@ export interface PointData {
   y: number
 }
 
+export interface LabeledPointData extends PointData {
+  showLabel: boolean
+}
+
 export type ExperimentName =
   | 'month'
   | 'weekday_very'
