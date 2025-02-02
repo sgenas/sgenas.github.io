@@ -372,8 +372,8 @@ const PCAVisualization: React.FC<Props> & {
       <div className="p-4 sm:p-6" ref={containerRef}>
         <div className="mb-6 flex flex-col items-center gap-4 sm:mb-8">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">Layer:</span>
-            <span className="text-sm" id="layer-number">
+            <span className="font-mono text-sm font-medium">Layer:</span>
+            <span className="font-mono text-sm" id="layer-number">
               {currentLayer}
             </span>
           </div>

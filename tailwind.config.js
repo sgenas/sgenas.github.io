@@ -1,6 +1,7 @@
 // @ts-check
 const { fontFamily } = require('tailwindcss/defaultTheme')
 const colors = require('tailwindcss/colors')
+const { text } = require('d3')
 
 /** @type {import("tailwindcss/types").Config } */
 module.exports = {
@@ -42,6 +43,7 @@ module.exports = {
           css: {
             a: {
               color: theme('colors.primary.500'),
+              textDecoration: 'none', // removes underline
               '&:hover': {
                 color: `${theme('colors.primary.600')}`,
               },
