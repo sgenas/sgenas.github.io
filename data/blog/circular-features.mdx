@@ -6,20 +6,22 @@ draft: false
 summary: In this project I explored how LLMs like Google's Gemma models internally represent circular concepts, from weekdays and months to colors and musical notes, building on recent discoveries about geometric patterns in these models' internal structures.
 ---
 
+*This project was completed as part of BlueDot Impact’s [AI Safety Fundamentals](https://aisafetyfundamentals.com/) course. The experiment code can be found in [this repository](https://github.com/sgenas/circular-features-experiments/tree/master).* 
+
 ## Summary
-This project was completed as part of the AI Safety Fundamentals course. I attempted to replicate some of the experimental results from the paper [Not All Language Model Features Are Linear](https://arxiv.org/abs/2405.14860) (Engels et al., 2024), but by using different models than the original authors. 
 
-The paper demonstrated that certain features were represented circularly within the model's internal structure. One of their experiments involved prompting a language model with lists of weekdays and months, using temporal modifiers like "early in" or "late in," which revealed a continuous circular pattern in the representations.
+In this project I attempted to replicate some of the experimental results from the paper [Not All Language Model Features Are Linear](https://arxiv.org/abs/2405.14860) (Engels et al., 2024), but by using different models than the original authors. 
 
-Using Google's open-weight Gemma-2 models (2B, 9B and 27B), I partially managed to replicate these results. More specifically, I showed that the circular patterns for weekdays occur in all three (?) models, while it was not as clear for the months setup.
+The paper demonstrated that certain features were represented circularly within the model's internal structure. One of their experiments involved prompting a language model with lists of weekdays and months, using temporal modifiers like "early in" or "late in," which revealed a continuous circular pattern in the activation representations.
 
-The other aim of the project was to extend this experiment with other potentially circular concepts - colour spaces and musical scales - and examining the structure of their activations. Here I found that encoding colours in the HSV (Hue, Saturation, Value) colour space indeed did show circular tendencies for the mid-sized Gemma model, while the other novel experiments didn’t show any clear patterns.
+Using Google's open-weight Gemma-2 models (2B, 9B and 27B), I partially managed to replicate these results. More specifically, I showed that the circular pattern for weekdays occur in all three models, while it didn’t show up in the months experiment.
 
-This project was modest in scope, but I hope this can serve as a tiny incremental contribution to the AI interpretability field, which is trying to reduce potential harmful outcomes by increasing our understanding of inner workings of (in this case) large language models.
+The other aim of the project was to extend this experiment by prompting the model with other potentially circular concepts - colour spaces and musical scales - and examine the structure of their activations. Here I found that encoding colours in the HSV (Hue, Saturation, Value) colour space indeed did show circular tendencies for the mid-sized Gemma model, while the other novel experiments didn’t show any clear patterns.
 
-The experiment code can be found in [this repository](https://github.com/sgenas/circular-features-experiments/tree/master).
+This project was modest in scope, but I hope this can serve as a tiny incremental contribution to the AI interpretability field, which is trying to reduce potential harmful consequences by increasing our understanding of the inner workings of (in this case) large language models.
 
 ## Introduction
+
 Why would we be interested in what happens within the the myriad pathways inside a language model? There has probably been curiosity among model developers and enthusiasts, but I would imagine that for the vast majority of people, there is no interest in cracking open the black box as long as the chatbot’s answers are useful.
 
 But the AI safety community has a different perspective. Interpretability research - sometimes prefixed as *mechanistic* interpretability to highlight the microscopic and causal interests of the field - has been suggested as a potential way to alleviate some risks that capable AI systems pose. A topic [summary from the AI Safety Fundamentals course](https://aisafetyfundamentals.com/blog/introduction-to-mechanistic-interpretability/) puts it succinctly:
@@ -27,30 +29,30 @@ But the AI safety community has a different perspective. Interpretability resear
 > Significant progress in interpreting neural networks would afford us insight into the rationale behind decisions that impact large numbers of people. […] Progress in mechanistic interpretability is also one path to detecting unaligned behaviour in AI models. If we can only assess a model’s outputs, but not the processes that give rise to them, we may not be able to tell whether a model is genuinely acting in the best interests of its user.
 > 
 
-So, interpretability is about understanding, on a mathematical level, how the internal representations of a model is affecting its outputs, and to be able to “read its thoughts” by reading the internal, intermediate numbers - understanding architecture in action.
+So, interpretability is about understanding, on a mathematical level, how the internal representations of a model is affecting its outputs, and to be able to “read its thoughts” by reading the internal, intermediate numbers - understanding the architecture in action.
 
-Recent work by Engels et al. in [this paper](https://arxiv.org/abs/2405.14860) showed that language models seem to encode certain concepts in a circular way, and they showed that the models also *use* these representations in modular arithmetic operations. This paper investigates whether language models use multi-dimensional (rather than just one-dimensional) representations to encode information and perform computations.
+Recent work by Engels et al. in [this 2024 paper](https://arxiv.org/abs/2405.14860) showed that language models seem to encode certain concepts in a circular way, and more importantly - they showed that the models also *use* these representations in modular arithmetic operations. This paper investigates whether language models use multi-dimensional (rather than just one-dimensional) representations to encode information and perform computations. This was in response to the *linear representation hypothesis* which, simply put, stated that LLMs represent concepts as linear combinations of lower-level features, which was previously one dominating theory within the field. (Reference)
 
-The key contributions of the paper were:
+The key contributions of Engels et al. were:
 
-1. They developed mathematical definitions for identifying "true" multi-dimensional features (as opposed to features that could be broken down into independent one-dimensional components).
+1. They developed mathematical definitions for identifying *irreducible* multi-dimensional features (as opposed to features that could be broken down into independent one-dimensional components).
 2. They created methods to automatically find such features using so-called sparse autoencoders (SAEs).
-3. The authors discovered that language models represent certain concepts using circular, two-dimensional features - particularly for days of the week and months of the year. These aren't just static representations - the models actively use these circular features to solve calendar-based arithmetic problems.
+3. The authors discovered that language models represent certain concepts using circular, two-dimensional features - particularly for days of the week and months of the year. They rigorously showed that these aren't just static representations - the models causally make use of these circular features to solve calendar-based arithmetic problems.
 
-I found it fascinating to see these results and decided that this paper would be the starting point of this project. And in short, the guiding research questions have been:
+I found it fascinating to read these results and decided that this paper would be the starting point of this project. And in short, the overarching research questions have been:
 
 - Is it possible to find circular representations of weekdays and months in the Gemma models as well?
 - Is it possible to find any other concepts that the models encode in a circular way?
 
 ## Experiments and Results
-I developed a framework to run the experiment from the paper, but which also permitted other inputs than the original ones. The core process was to:
 
-1. Generate embeddings for various prompts involving circular concepts
-2. Extract hidden states from different layers of the models
-3. Perform dimensionality reduction using principal component analysis (PCA) on the activations
-4. Visualize in two dimensions using by plotting the top two PCA components
+The main part of the project consisted of developing a framework to run the experiment from the paper, but which also permitted other inputs than the original ones. The core process was to:
 
-This was in line with the last experiment of Engels et al. - I basically just rewrote and extended their code ([here](https://github.com/JoshEngels/MultiDimensionalFeatures/blob/main/sae_multid_feature_discovery/other_circle_points.py) is a link to their script, and [here](https://github.com/sgenas/circular-features-experiments/blob/master/src/continuity_experiments.py) is a link to mine).
+1. Sample activation data for the last token of various prompts involving circular concepts, at different layers of the model
+2. Perform dimensionality reduction using principal component analysis (PCA) on the activations
+3. Visualize in two dimensions using by plotting the top two PCA components
+
+This was in line with the last experiment of Engels et al., presented in the section *Continuity of representations* in their paper. I basically just rewrote and extended their code ([here](https://github.com/JoshEngels/MultiDimensionalFeatures/blob/main/sae_multid_feature_discovery/other_circle_points.py) is a link to their script, and [here](https://github.com/sgenas/circular-features-experiments/blob/master/src/continuity_experiments.py) is a link to mine).
 
 I ran the experiments for four different concept domains:
 
@@ -65,49 +67,54 @@ And I did this with three different models (all non-quantized base models from H
 - [Gemma-2 9B](https://huggingface.co/google/gemma-2-9b)
 - [Gemma-2 27B](https://huggingface.co/google/gemma-2-27b)
 
-### Key takeaways
-1. I successfully replicated the circular patterns for weekdays across all three Gemma models (2B, 9B, 27B), particularly in early layers. However, the month/season circular patterns were less clear compared to the original Engels et al. paper
-- The modifier ordering ("early"/"late") was less consistent than in the original study.
+Why three different model sizes? I guess I was just curious if the patterns would be similar within the Gemma family, or if there would be any discernible differences.
 
-### Weekday Experiments
-I generated prompts ranging from "very early on Monday" to "very late on Sunday". The key findings were:
+### Key Takeaways
 
-- Similar circular representations appeared in the Gemma models, particularly in early layers
-- Weekdays maintained their sequential order in the representations
-- The ordering of modifiers ("early"/"late") was less consistent than in the original paper
+1. I successfully replicated the circular patterns for weekdays across all three Gemma models (2B, 9B, 27B), particularly in early layers. However, the month/season circular patterns were less clear compared to the original Engels et al. paper. 
+2. Other concepts than temporal ones showed similar circular representation patterns, specifically when running the experiments with HSV colour values. This wasn’t consistent  for all Gemma model sizes however.
+
+### Weekday Experiment
+
+This was directly based on the experiment code from the paper, and takes all weekdays as input prompts - I’ve called these *base items*. This list was appended with prompts prefixed with *modifiers* ”very early on” and ”very late on”, which resulted in prompts ranging from "very early on Monday" to "very late on Sunday". 
+
+The key findings were:
+
+- Similar circular representations appeared in the Gemma models, particularly in early layers.
+- Weekdays maintained their sequential order in the representations.
+- The ordering of modifiers was less consistent than in the original paper - (what exactly happened?)
+
+Here’s the output data for all three models:
 
 export const fileNameWeekday = 'weekday_very';
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameWeekday}_merged.json`}/>
 
-Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
-
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameWeekday}_merged.json`}/>
-
-And here's the one with Gemma 2 27B:
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameWeekday}_merged.json`}/>
 
-### Month/Season Experiments
-Using prompts with modifiers "early in" and "late in" for months and seasons:
+### Months (and Seasons) Experiment
+
+This was also an experiment from Engels et al. The setup was similar as for the weekdays, but with prompts with modifiers "early in" and "late in" for a list of months *and* seasons as base items:
+
+The findings were that:
 
 - Some layers showed structured patterns
 - The clear circular arrangements from the original paper were not consistently replicated
+- (There are some circular tendencies however - it looks like you could get a circle if 3D rotating all points. This could potentially be a result of some PCA weirdness, and might show up as a circle if projecting onto other PCA components)
 - This suggests the representation might be model-architecture dependent
 
 export const fileNameMonth = 'month';
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameMonth}_merged.json`}/>
 
-Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
-
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameMonth}_merged.json`}/>
-
-And here's the one with Gemma 2 27B:
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameMonth}_merged.json`}/>
 
-### Color Space Experiments
+### Colour Space Experiments
+
 For the colour space experiments, I started with a simple set of strings with base colors to see if the model would represent them in a way that reflects their natural circular relationship. Here are the test prompts for this experiments:
 
 ```python
@@ -127,6 +134,7 @@ This experiment revealed no clear circular patterns in the data. In the few case
 So I decided to try out and see if colours represented in the [HSV](https://en.wikipedia.org/wiki/HSL_and_HSV) (*Hue, Saturation, Value*) colour space would “work”, since this system actually explicitly represents the colour hues in terms of degrees between 0 and 360.
 
 The test prompts for this setup was:
+
 ```python
 hsv_colors = [
     "HSV 0 100 100 colour values",    # Red
@@ -138,16 +146,11 @@ hsv_colors = [
 ]
 ```
 
-
 export const fileNameHSV = 'hsv_colour_one_red';
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-2b_${fileNameHSV}_merged.json`}/>
 
-Here's another PCA visualization showing the relationships between different items, but with Gemma 2 9B instead:
-
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-9b_${fileNameHSV}_merged.json`}/>
-
-And here's the one with Gemma 2 27B:
 
 <PCAVisualization dataPath={`/data/circular-features/gemma-2-27b_${fileNameHSV}_merged.json`}/>
 
@@ -156,18 +159,18 @@ The colours would form a circle (or polygon at least) that had the colours in or
 I also tried adding tertiary colors in the experiment, which is the above colour values but with the intermediary colors as well (`Yellow-Green / Chartreuse`, `Green-Cyan / Spring Green`, `Cyan-Blue / Azure`, `Violet` and `Red-Magenta / Rose`, with hue values 30, 90, 150 and so on). But this configuration showed no clear patterns at all.
 
 ### Musical Note Experiments
-I explored two variations:
+
+Besides colour spaces, I also tried out if musical scales - which are inherently circular, or maybe helical, in their nature - would show up as a circular pattern in the models’ activation space. 
+
+I explored two variations (both prefixed by ”musical note”):
 
 1. Full chromatic scale (C, C#, D, D#, ..., A#, B)
 2. C-major scale (C, D, E, F, G, A, B) with "flat"/"sharp" modifiers
 
-- No clear circular patterns emerged
-- Sharp notes (#) tended to cluster together, possibly due to tokenization effects
-
-- Almost no circular patterns detected
-- Note ordering was not preserved in the geometric arrangement
+But for these configurations there were no emergent patterns. When using sharp notes  (notes ending with the # sign), these would cluster tightly together, probably because this was the last token in the input sequence for all these notes. And when running the C-major scale setup, the note order wasn’t preserved in the polygons that formed in some layers. 
 
 ## Closing thoughts
+
 In the paper, there’s this (wonderfully technical) line about another study that found multidimensional features:
 
 > However, our work finds circular features that represent latent concepts from text, while the GPT-2 learned position vectors [from that other study] are specific to tokenization, separate from the rest of the model parameters, and causally implicated only due to positional attention masking.
