@@ -76,6 +76,15 @@ const PCAVisualization: React.FC<Props> & {
   const [maxLayer, setMaxLayer] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
+  // Safe model switching handler
+  const handleModelChange = (newModel: ModelName) => {
+    const newMaxLayer = getMaxLayer(newModel)
+    setCurrentModel(newModel)
+    // Adjust current layer if it exceeds the new model's max layer
+    setCurrentLayer((curr) => Math.min(curr, newMaxLayer))
+    setMaxLayer(newMaxLayer)
+  }
+
   // Responsive margins that scale with screen size
   const getMargins = (width: number) => ({
     top: Math.max(30, Math.min(60, width * 0.075)),
@@ -398,7 +407,7 @@ const PCAVisualization: React.FC<Props> & {
         <div className="mb-6 flex flex-col items-center gap-4 sm:mb-8">
           <ModelSelector
             currentModel={currentModel}
-            setCurrentModel={setCurrentModel}
+            setCurrentModel={handleModelChange}
             id={currentExperiment}
           />
           <div className="flex items-center gap-4">
