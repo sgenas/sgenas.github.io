@@ -6,6 +6,7 @@ import Image from './Image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
 import PCAWrapper from '@/components/circular-features-graphs/PCAWrapper'
+import AsciiArtWrapper from './ASCIIWrapper'
 
 export const components: MDXComponents = {
   Image,
