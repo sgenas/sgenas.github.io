@@ -50,7 +50,7 @@ The main part of the project consisted of developing a framework to run the expe
 
 1. Sample activation data for the last token of various prompts involving circular concepts, at different layers of the model
 2. Perform dimensionality reduction using principal component analysis (PCA) on the activations
-3. Visualize in two dimensions using by plotting the top two PCA components
+3. Visualize in two dimensions by plotting the top two PCA components
 
 This was in line with the last experiment of Engels et al., presented in the section *Continuity of representations* in their paper. I basically just rewrote and extended their code ([here](https://github.com/JoshEngels/MultiDimensionalFeatures/blob/main/sae_multid_feature_discovery/other_circle_points.py) is a link to their script, and [here](https://github.com/sgenas/circular-features-experiments/blob/master/src/continuity_experiments.py) is a link to mine).
 
@@ -96,10 +96,11 @@ This was also an experiment from Engels et al. The setup was similar as for the 
 
 The findings were that:
 
-- Some layers showed structured patterns
-- The clear circular arrangements from the original paper were not consistently replicated
+- Some layers for some models showed circular patterns, but…
+- …the clear circular arrangements from the original paper were not consistently replicated.
 - (There are some circular tendencies however - it looks like you could get a circle if 3D rotating all points. This could potentially be a result of some PCA weirdness, and might show up as a circle if projecting onto other PCA components)
-- This suggests the representation might be model-architecture dependent
+
+Here’s the data for the months experiment for the three model sizes:
 
 export const fileNameMonth = 'month';
 
@@ -107,7 +108,7 @@ export const fileNameMonth = 'month';
 
 ### Colour Space Experiments
 
-For the colour space experiments, I started with a simple set of strings with base colors to see if the model would represent them in a way that reflects their natural circular relationship. Here are the test prompts for this experiments:
+For the colour space experiments, I started with a simple set of strings with base colors to see if the model would represent them in a way that reflects their natural circular relationship. Here are the test prompts:
 
 ```python
 base_colors = [
@@ -123,9 +124,9 @@ base_colors = [
 
 This experiment revealed no clear circular patterns in the data. In the few cases where points did form circular arrangements, they failed to align with the expected ordering found in the [RGB color wheel](https://en.m.wikipedia.org/wiki/File:RGB_color_wheel.svg).
 
-So I decided to try out and see if colours represented in the [HSV](https://en.wikipedia.org/wiki/HSL_and_HSV) (*Hue, Saturation, Value*) colour space would “work”, since this system actually explicitly represents the colour hues in terms of degrees between 0 and 360.
+So I decided to try out and see if colours represented in the [HSV](https://en.wikipedia.org/wiki/HSL_and_HSV) (*Hue, Saturation, Value*) colour space would “work”, since this system actually explicitly represents the colour hues circularly, in terms of degrees between 0 and 360.
 
-The test prompts for this setup was:
+The test prompts for this setup was (the ”colour values” substring added to be more explicit):
 
 ```python
 hsv_colors = [
@@ -142,7 +143,7 @@ export const fileNameHSV = 'hsv_colour_one_red';
 
 <PCAVisualization dataPath={`/data/circular-features/${fileNameHSV}_merged.json`}/>
 
-The colours would form a circle (or polygon at least) that had the colours in order for most of the layers in the 9B model, especially in the latter part of the layers - for a cherry-picked example, check out layer 38. But there were no clear circular patterns with the colors in order for the other two models.
+The colours indeed formed a circle (or polygon at least) that had the colours in order for most of the layers in the 9B model, especially in the later layers - for a cherry-picked example, check out layer 38. But there were no clear circular patterns with the colours in order for the other two models.
 
 I also tried adding tertiary colors in the experiment, which is the above colour values but with the intermediary colors as well (`Yellow-Green / Chartreuse`, `Green-Cyan / Spring Green`, `Cyan-Blue / Azure`, `Violet` and `Red-Magenta / Rose`, with hue values 30, 90, 150 and so on). But this configuration showed no clear patterns at all.
 
@@ -159,18 +160,20 @@ But for these configurations there were no emergent patterns. When using sharp n
 
 ## Closing thoughts
 
+So, to conclude: It seems like the circular patterns that Engels et al. found are not limited to the models they tested (and in fairness - they did test three different models, so this is not unexpected). And additionally - which is perhaps also to expect - there are other concepts than the temporal ones that show up as a circle when plotting the top two PCA components of the activations.
+
 In the paper, there’s this (wonderfully technical) line about another study that found multidimensional features:
 
 > However, our work finds circular features that represent latent concepts from text, while the GPT-2 learned position vectors [from that other study] are specific to tokenization, separate from the rest of the model parameters, and causally implicated only due to positional attention masking.
 > 
 
-All of this and much more might have happened - I’m just showing what I found, and reminding everyone that the specific experiments I ran say nothing about causation. Also, no examination of separability was made.
+All of this and much more might have happened - I’m just showing what I found from running this relatively simple investigation, and reminding everyone that the specific experiments I ran say nothing about causation. Also, no examination of reducibility was made, so it might be the case that the colour and musical note features that I tried to analyse would actually decompose into lower-level features upon inspection, which would reduce the relevance of my analysis somewhat because what Engels et al. were trying to show was - as the title so concisely states - not all language model features are linear.
 
-While I couldn't fully replicate the sophisticated analyses from the original paper, this exploration revealed interesting insights about how different models represent circular concepts. The clear temporal patterns in the original paper appear to be somewhat model-specific, and attempts to find similar patterns in other naturally circular domains produced mixed results.
-
-I also have a feeling that applying PCA might make the 2D representations look less circular in some cases - sometimes it kind of looked like the point clouds were kind of rotated in 3D space, and as if they were actually showing up as a circle with “depth”. See for example the weekday experiment results for layer 21 in Gemma-2 9B. This doesn’t disprove any of the conclusions in the paper, but rather shows that other multidimensional geometrical representations might exist (for example cylindrical or helical structures).
+I also have a feeling that applying PCA might make the 2D representations look less circular in some cases - sometimes it kind of looked like the point clouds were kind of rotated in 3D space, and as if they were actually showing up as a circle with “depth”, see for example the weekday experiment results for layer 21 in Gemma-2 9B. This doesn’t disprove any of the conclusions in the paper, but rather shows that other multidimensional geometrical representations might exist (for example cylindrical or helical structures).
 
 For future work, it would be interesting to:
 
 - Run the other experiments of Engels et al. on the Gemma models as well to see if the same causal mechanisms show up.
 - Plot the PCA projections in three dimensions instead of two.
+
+Understanding how language models represent and manipulate concepts internally - whether through circular patterns or other geometric structures - remains a crucial step toward developing more interpretable and safer AI systems, and I hope this modest exploration adds another small piece to that growing puzzle.
