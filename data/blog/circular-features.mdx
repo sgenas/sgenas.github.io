@@ -16,7 +16,7 @@ The paper demonstrated that certain features were represented circularly within 
 
 Using Google's open-weight Gemma-2 models (2B, 9B and 27B), I partially managed to replicate these results. More specifically, I showed that the circular pattern for weekdays occur in all three models, while it didn’t show up in the months experiment.
 
-The other aim of the project was to extend this experiment by prompting the model with other potentially circular concepts - colour spaces and musical scales - and examine the structure of their activations. Here I found that encoding colours in the HSV (Hue, Saturation, Value) colour space indeed did show circular tendencies for the mid-sized Gemma model, while the other novel experiments didn’t show any clear patterns.
+The other aim of the project was to extend this experiment by prompting the model with other potentially circular concepts – colour spaces and musical scales – and examine the structure of their activations. Here I found that encoding colours in the HSV (Hue, Saturation, Value) colour space indeed did show circular tendencies for the mid-sized Gemma model, while the other novel experiments didn’t show any clear patterns.
 
 This project was modest in scope, but I hope this can serve as a tiny incremental contribution to the AI interpretability field, which is trying to reduce potential harmful consequences by increasing our understanding of the inner workings of (in this case) large language models.
 
@@ -24,20 +24,20 @@ This project was modest in scope, but I hope this can serve as a tiny incrementa
 
 Why would we be interested in what happens within the the myriad pathways inside a language model? There has probably been curiosity among model developers and enthusiasts, but I would imagine that for the vast majority of people, there is no interest in cracking open the black box as long as the chatbot’s answers are useful.
 
-But the AI safety community has a different perspective. Interpretability research - sometimes prefixed as *mechanistic* interpretability to highlight the microscopic and causal interests of the field - has been suggested as a potential way to alleviate some risks that capable AI systems pose. A topic [summary from the AI Safety Fundamentals course](https://aisafetyfundamentals.com/blog/introduction-to-mechanistic-interpretability/) puts it succinctly:
+But the AI safety community has a different perspective. Interpretability research – sometimes prefixed as *mechanistic* interpretability to highlight the microscopic and causal interests of the field – has been suggested as a potential way to alleviate some risks that capable AI systems pose. A topic [summary from the AI Safety Fundamentals course](https://aisafetyfundamentals.com/blog/introduction-to-mechanistic-interpretability/) puts it succinctly:
 
 > Significant progress in interpreting neural networks would afford us insight into the rationale behind decisions that impact large numbers of people. […] Progress in mechanistic interpretability is also one path to detecting unaligned behaviour in AI models. If we can only assess a model’s outputs, but not the processes that give rise to them, we may not be able to tell whether a model is genuinely acting in the best interests of its user.
 > 
 
-So, interpretability is about understanding, on a mathematical level, how the internal representations of a model is affecting its outputs, and to be able to “read its thoughts” by reading the internal, intermediate numbers - understanding the architecture in action.
+So, interpretability is about understanding, on a mathematical level, how the internal representations of a model is affecting its outputs, and to be able to “read its thoughts” by reading the internal, intermediate numbers – understanding the architecture in action.
 
-Recent work by Engels et al. in [this 2024 paper](https://arxiv.org/abs/2405.14860) showed that language models seem to encode certain concepts in a circular way, and more importantly - they showed that the models also *use* these representations in modular arithmetic operations. This paper investigates whether language models use multi-dimensional (rather than just one-dimensional) representations to encode information and perform computations. This was in response to the *linear representation hypothesis* which, simply put, stated that LLMs represent concepts as linear combinations of lower-level features, which was previously one dominating theory within the field. (Reference)
+Recent work by Engels et al. in [this 2024 paper](https://arxiv.org/abs/2405.14860) showed that language models seem to encode certain concepts in a circular way, and more importantly – they showed that the models also *use* these representations in modular arithmetic operations. This paper investigates whether language models use multi-dimensional (rather than just one-dimensional) representations to encode information and perform computations. This was in response to the *linear [representation hypothesis](https://transformer-circuits.pub/2024/july-update/index.html#linear-representations)* which, simply put, stated that LLMs represent concepts as linear combinations of lower-level features, which was previously one dominating theory within the field.
 
 The key contributions of Engels et al. were:
 
 1. They developed mathematical definitions for identifying *irreducible* multi-dimensional features (as opposed to features that could be broken down into independent one-dimensional components).
 2. They created methods to automatically find such features using so-called sparse autoencoders (SAEs).
-3. The authors discovered that language models represent certain concepts using circular, two-dimensional features - particularly for days of the week and months of the year. They rigorously showed that these aren't just static representations - the models causally make use of these circular features to solve calendar-based arithmetic problems.
+3. The authors discovered that language models represent certain concepts using circular, two-dimensional features – particularly for days of the week and months of the year. They rigorously showed that these aren't just static representations – the models causally make use of these circular features to solve calendar-based arithmetic problems.
 
 I found it fascinating to read these results and decided that this paper would be the starting point of this project. And in short, the overarching research questions have been:
 
@@ -76,13 +76,13 @@ Why three different model sizes? I guess I was just curious if the patterns woul
 
 ### Weekday Experiment
 
-This was directly based on the experiment code from the paper, and takes all weekdays as input prompts - I’ve called these *base items*. This list was appended with prompts prefixed with *modifiers* ”very early on” and ”very late on”, which resulted in prompts ranging from "very early on Monday" to "very late on Sunday". 
+This was directly based on the experiment code from the paper, and takes all weekdays as input – I’ve called these *base items*. This list was appended with prompts prefixed with *modifiers* ”very early on” and ”very late on”, which resulted in prompts ranging from "very early on Monday" to "very late on Sunday". 
 
 The key findings were:
 
 - Similar circular representations appeared in the Gemma models, particularly in early layers.
 - Weekdays maintained their sequential order in the representations.
-- The ordering of modifiers was less consistent than in the original paper - (what exactly happened?)
+- The ordering of modifiers was less consistent than in the original paper.
 
 Here’s the output data for all three models:
 
@@ -98,7 +98,7 @@ The findings were that:
 
 - Some layers for some models showed circular patterns, but…
 - …the clear circular arrangements from the original paper were not consistently replicated.
-- (There are some circular tendencies however - it looks like you could get a circle if 3D rotating all points. This could potentially be a result of some PCA weirdness, and might show up as a circle if projecting onto other PCA components)
+- (There are some circular tendencies however – it looks like you could get a circle if 3D rotating all points. This could potentially be a result of some PCA weirdness, and might show up as a circle if projecting onto other PCA components)
 
 Here’s the data for the months experiment for the three model sizes:
 
@@ -149,7 +149,7 @@ I also tried adding tertiary colors in the experiment, which is the above colour
 
 ### Musical Note Experiments
 
-Besides colour spaces, I also tried out if musical scales - which are inherently circular, or maybe helical, in their nature - would show up as a circular pattern in the models’ activation space. 
+Besides colour spaces, I also tried out if musical scales – which are inherently circular, or maybe helical, in their nature – would show up as a circular pattern in the models’ activation space. 
 
 I explored two variations (both prefixed by ”musical note”):
 
@@ -160,7 +160,7 @@ But for these configurations there were no emergent patterns. When using sharp n
 
 ## Closing thoughts
 
-So, to conclude: It seems like the circular patterns that Engels et al. found are not limited to the models they tested (and in fairness - they did test three different models, so this is not unexpected). And additionally - which is perhaps also to expect - there are other concepts than the temporal ones that show up as a circle when plotting the top two PCA components of the activations.
+So, to conclude: It seems like the circular patterns that Engels et al. found are not limited to the models they tested (and in fairness - they did test three different models, so this is not unexpected). And additionally – which is perhaps also to expect – there are other concepts than the temporal ones that show up as a circle when plotting the top two PCA components of the activations.
 
 In the paper, there’s this (wonderfully technical) line about another study that found multidimensional features:
 
@@ -176,4 +176,4 @@ For future work, it would be interesting to:
 - Run the other experiments of Engels et al. on the Gemma models as well to see if the same causal mechanisms show up.
 - Plot the PCA projections in three dimensions instead of two.
 
-Understanding how language models represent and manipulate concepts internally - whether through circular patterns or other geometric structures - remains a crucial step toward developing more interpretable and safer AI systems, and I hope this modest exploration adds another small piece to that growing puzzle.
+Understanding how language models represent and manipulate concepts internally – whether through circular patterns or other geometric structures – remains a crucial step toward developing more interpretable and safer AI systems, and I hope this modest exploration adds another small piece to that growing puzzle.
