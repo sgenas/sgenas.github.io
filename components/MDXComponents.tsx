@@ -6,6 +6,7 @@ import Image from './Image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
 import PCAWrapper from '@/components/circular-features-graphs/PCAWrapper'
+import FinancesWrapper from './swedish-state-finances/FinancesWrapper'
 
 export const components: MDXComponents = {
   Image,
@@ -15,4 +16,5 @@ export const components: MDXComponents = {
   table: TableWrapper,
   BlogNewsletterForm,
   PCAVisualization: PCAWrapper,
+  FinancesVisualization: FinancesWrapper,
 }
