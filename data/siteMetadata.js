@@ -5,7 +5,7 @@ const siteMetadata = {
   headerTitle: 'Sebastian Genas',
   description: 'This is still very much a template. I am working on it.',
   language: 'en-us',
-  theme: 'system', // system, dark or light
+  theme: 'light', // system, dark or light
   siteUrl: 'https://sgenas.github.io',
   siteRepo: 'https://github.com/sgenas/sgenas.github.io',
   // siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
